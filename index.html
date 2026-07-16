@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlickTrainer — Free Browser Aim Trainer</title>
+<meta name="description" content="Free browser-based FPS aim trainer. Click targets as fast and accurately as possible, track your reaction time and accuracy, and beat your best score — no download, no sign-up.">
+<link rel="canonical" href="https://flicktrainer.com/">
+<meta name="theme-color" content="#0a0e14">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="FlickTrainer — Free Browser Aim Trainer">
+<meta property="og:description" content="Click targets as fast and accurately as possible. Track reaction time, accuracy, and throughput, and beat your best score — free, instant, runs entirely in your browser.">
+<meta property="og:url" content="https://flicktrainer.com/">
+<meta property="og:image" content="https://flicktrainer.com/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FlickTrainer — Free Browser Aim Trainer">
+<meta name="twitter:description" content="Click targets as fast and accurately as possible. Track reaction time, accuracy, and throughput, and beat your best score.">
+<meta name="twitter:image" content="https://flicktrainer.com/assets/og-image.png">
+
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/styles.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "FlickTrainer",
+  "url": "https://flicktrainer.com/",
+  "applicationCategory": "Game",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Free browser-based FPS aim trainer: click targets as fast and accurately as possible and track reaction time, accuracy, and throughput."
+}
+</script>
+
+<!--
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+-->
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="flicktrainer.com home">
+      <span class="brand-mark"><span class="crosshair-mark">◎</span>Flick<span class="accent-word">Trainer</span></span>
+      <span class="brand-tag">browser aim training</span>
+    </a>
+    <div class="header-actions">
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark/light theme" title="Toggle theme">◐</button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ===================== SETUP SCREEN ===================== -->
+  <section id="screen-setup" class="screen">
+    <div class="hero">
+      <h1>Train your click speed and accuracy</h1>
+      <p>Targets pop up at random — click them as fast and precisely as you can. Free, instant, no sign-up.</p>
+      <p class="trust-line">Runs 100% in your browser<span class="dot">•</span>Nothing is uploaded<span class="dot">•</span>Scores saved locally</p>
+    </div>
+
+    <div class="panel setup-panel">
+      <h2>Mode</h2>
+      <div class="segmented segmented--lg" role="group" aria-label="Game mode" id="mode-select">
+        <button type="button" class="mode-opt" data-mode="timed" aria-pressed="true">Timed</button>
+        <button type="button" class="mode-opt" data-mode="count" aria-pressed="false">Target Count</button>
+      </div>
+
+      <div id="timed-options" class="field" style="margin-top:16px;">
+        <label>Duration</label>
+        <div class="segmented" role="group" aria-label="Duration" id="duration-select">
+          <button type="button" class="duration-opt" data-duration="15" aria-pressed="false">15s</button>
+          <button type="button" class="duration-opt" data-duration="30" aria-pressed="true">30s</button>
+          <button type="button" class="duration-opt" data-duration="60" aria-pressed="false">60s</button>
+        </div>
+      </div>
+
+      <div id="count-options" class="field" style="margin-top:16px; display:none;">
+        <label>Target count</label>
+        <div class="segmented" role="group" aria-label="Target count" id="count-select">
+          <button type="button" class="count-opt" data-count="10" aria-pressed="false">10</button>
+          <button type="button" class="count-opt" data-count="30" aria-pressed="true">30</button>
+          <button type="button" class="count-opt" data-count="50" aria-pressed="false">50</button>
+        </div>
+      </div>
+
+      <div class="best-row" id="best-row">
+        <div class="best-stat">
+          <span class="best-stat-label">Best accuracy</span>
+          <span class="best-stat-val" id="best-accuracy-val">—</span>
+        </div>
+        <div class="best-stat">
+          <span class="best-stat-label">Best avg. time</span>
+          <span class="best-stat-val" id="best-avgtime-val">—</span>
+        </div>
+      </div>
+
+      <button type="button" id="start-btn" class="primary start-btn">Start</button>
+    </div>
+
+    <section class="container-narrow" style="padding-top:0;">
+      <h2>How rating works</h2>
+      <p>After each session you get an average time-to-click per target, in milliseconds, measured from the moment a target spawns to the moment you click it. Casual players typically average around <strong>350–450ms</strong>. FlickTrainer rates your session against tiers from <strong>Needs Practice</strong> up to <strong>Superhuman</strong> based on that average, alongside your accuracy and effective targets-per-second throughput.</p>
+    </section>
+  </section>
+
+  <!-- ===================== GAME SCREEN ===================== -->
+  <section id="screen-game" class="screen" hidden>
+    <div class="game-hud">
+      <div class="hud-stat"><span class="hud-label" id="hud-primary-label">Time</span><span class="hud-val" id="hud-primary-val">--</span></div>
+      <div class="hud-stat"><span class="hud-label">Hits</span><span class="hud-val" id="hud-hits">0</span></div>
+      <div class="hud-stat"><span class="hud-label">Misses</span><span class="hud-val" id="hud-misses">0</span></div>
+      <div class="hud-stat"><span class="hud-label">Accuracy</span><span class="hud-val" id="hud-accuracy">--</span></div>
+      <button type="button" id="quit-btn" class="icon-btn quit-btn">Quit</button>
+    </div>
+    <div class="game-area" id="game-area" tabindex="0"></div>
+  </section>
+
+  <!-- ===================== RESULTS SCREEN ===================== -->
+  <section id="screen-results" class="screen" hidden>
+    <div class="hero hero--results">
+      <div class="rating-badge" id="rating-badge">
+        <span class="rating-tier" id="rating-tier">—</span>
+        <span class="rating-label" id="rating-label">No data</span>
+      </div>
+      <p class="rating-compare" id="rating-compare"></p>
+    </div>
+
+    <div class="panel results-panel">
+      <h2>Session results</h2>
+      <div class="stats-grid">
+        <div class="stat-tile"><span class="stat-label">Hits</span><span class="stat-val" id="res-hits">0</span></div>
+        <div class="stat-tile"><span class="stat-label">Misses</span><span class="stat-val" id="res-misses">0</span></div>
+        <div class="stat-tile"><span class="stat-label">Accuracy</span><span class="stat-val" id="res-accuracy">0%</span></div>
+        <div class="stat-tile"><span class="stat-label">Avg. time / target</span><span class="stat-val" id="res-avgtime">—</span></div>
+        <div class="stat-tile"><span class="stat-label">Throughput</span><span class="stat-val" id="res-throughput">0/s</span></div>
+        <div class="stat-tile"><span class="stat-label">Best avg. time</span><span class="stat-val" id="res-best-avgtime">—</span></div>
+      </div>
+      <div class="new-best-flag" id="new-best-flag" hidden>New best for this mode!</div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button type="button" id="restart-btn" class="primary start-btn">Play again</button>
+        <button type="button" id="change-mode-btn" class="icon-btn">Change mode</button>
+      </div>
+    </div>
+
+    <div class="panel history-panel">
+      <h2>Recent sessions</h2>
+      <div class="history-chart" id="history-chart" aria-hidden="true"></div>
+      <ol class="history-list" id="history-list"></ol>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>© <span id="year"></span> flicktrainer.com</div>
+    <div class="footer-links">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js"></script>
+</body>
+</html>
