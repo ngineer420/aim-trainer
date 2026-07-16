@@ -25,6 +25,7 @@ Then open `http://localhost:8000`.
 
 ```
 index.html            Main app (setup / game / results screens)
+articles/              Original written content (AdSense content-depth round)
 privacy.html           Privacy policy (required for ad networks)
 terms.html             Terms of use
 404.html               Custom not-found page
@@ -32,6 +33,8 @@ assets/css/styles.css  Design system
 assets/js/app.js       Pure scoring/spawn logic + game/DOM wiring
 CNAME                   GitHub Pages custom domain (flicktrainer.com)
 ```
+
+`articles/` holds four original written pieces (reaction-time benchmarks, flicking vs. tracking technique, aim-trainer history, and how this test's scoring works) linked from the homepage's &ldquo;Learn more&rdquo; section and `sitemap.xml`, added to demonstrate genuine content depth beyond the single tool page for AdSense review.
 
 The scoring and game-timing math (accuracy, average reaction time, throughput,
 rating-tier lookup, target spawn positioning, shrink-over-time sizing, best-record

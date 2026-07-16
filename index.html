@@ -153,6 +153,52 @@
       <ol class="history-list" id="history-list"></ol>
     </div>
   </section>
+
+  <section class="container-narrow" style="padding-top:0;">
+    <h2 style="margin-top:0;">About this aim trainer</h2>
+    <p>FlickTrainer is a free browser-based <strong>aim trainer</strong> that measures how fast and accurately you can click targets — a common benchmark for reflexes and mouse control used by FPS players to warm up before ranked matches and track their flicking speed over time. Pick a Timed session (15, 30, or 60 seconds) or a Target Count session (10, 30, or 50 targets), then see your accuracy, average time-to-click, throughput, and a skill rating from Needs Practice up to Superhuman.</p>
+    <p>Everything runs locally in your browser — your clicks and scores are never uploaded anywhere, and your personal bests are stored only in this browser via <code>localStorage</code>.</p>
+
+    <h2>How is my rating calculated?</h2>
+    <p>Your average time-to-click is measured from the moment each target spawns to the moment you click it, then averaged across every target you hit in the session. That average is checked against fixed millisecond tiers — roughly 220ms and under is Superhuman, up to 400ms is Solid, and anything past 550ms is Needs Practice — alongside your accuracy and effective targets-per-second throughput.</p>
+
+    <div class="faq-item">
+      <h3>What's a good reaction time on this test?</h3>
+      <p>Casual players typically average 350-450ms per target. Competitive FPS players training seriously often land in the 250-320ms range, while sub-250ms averages are genuinely fast and rare.</p>
+    </div>
+    <div class="faq-item">
+      <h3>Does mode or target size affect my score?</h3>
+      <p>Yes — targets shrink from 58px down to 34px over their 1.3 second lifespan, so hitting one early (while it's larger) is easier than hitting one right before it disappears. Timed and Target Count modes can also produce slightly different averages since they change your incentive to rush or play safe.</p>
+    </div>
+    <div class="faq-item">
+      <h3>Does this work on mobile?</h3>
+      <p>Yes. Targets respond to both touch and mouse input, and each tap or click is counted once — no double-counting between input types.</p>
+    </div>
+    <div class="faq-item">
+      <h3>Is my personal best saved anywhere online?</h3>
+      <p>No. Your best accuracy and best average time per mode are saved only in your browser's local storage on this device. Clearing your browser data or switching devices/browsers will reset them.</p>
+    </div>
+  </section>
+
+  <section class="container-narrow" style="padding-top:0;" id="articles">
+    <h2 style="margin-top:0;">Learn more about aim training</h2>
+    <div class="faq-item">
+      <h3><a href="/articles/what-is-a-good-reaction-time.html">What's a good reaction time for aim training?</a></h3>
+      <p>Realistic benchmarks: the human reflex floor, what casual vs. competitive FPS players score, and why raw reaction time alone doesn't equal good aim.</p>
+    </div>
+    <div class="faq-item">
+      <h3><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. tracking: the two different skills behind &ldquo;good aim&rdquo;</a></h3>
+      <p>A real technique guide covering flicking, tracking, and micro-adjustment aim, common training mistakes, and how sensitivity changes each one.</p>
+    </div>
+    <div class="faq-item">
+      <h3><a href="/articles/history-of-aim-trainers.html">The history of aim trainers, from Quake warmups to Kovaak's</a></h3>
+      <p>How aim training grew out of competitive Quake and Counter-Strike bot maps into dedicated software like Kovaak's and Aim Lab.</p>
+    </div>
+    <div class="faq-item">
+      <h3><a href="/articles/how-this-test-works.html">How this test works and why we built it</a></h3>
+      <p>A look under the hood: how accuracy, reaction time, and throughput are calculated, and how targets shrink over their lifespan.</p>
+    </div>
+  </section>
 </main>
 
 <footer class="site-footer">

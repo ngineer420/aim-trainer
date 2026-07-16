@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How This Aim Trainer Works: Scoring, Target Shrink, and Rating Tiers — flicktrainer.com</title>
+<meta name="description" content="A look under the hood at FlickTrainer's actual code: how accuracy, average reaction time, and throughput are calculated, how targets shrink over their lifespan, and how the rating tiers work.">
+<link rel="canonical" href="https://flicktrainer.com/articles/how-this-test-works.html">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/styles.css">
+<!--
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+-->
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="flicktrainer.com home">
+      <span class="brand-mark"><span class="crosshair-mark">◎</span>Flick<span class="accent-word">Trainer</span></span>
+      <span class="brand-tag">browser aim training</span>
+    </a>
+  </div>
+</header>
+<main class="container-narrow">
+  <h1>How This Aim Trainer Works: Scoring, Target Shrink, and Rating Tiers</h1>
+
+  <p>Most aim trainers treat their scoring as a black box, but there's nothing hidden about how <a href="/">FlickTrainer</a> arrives at your numbers. Every calculation — accuracy, average reaction time, throughput, target size, and rating tier — lives in a small set of plain, dependency-free functions, and this article walks through exactly what each one does.</p>
+
+  <h2>The two modes</h2>
+  <p>FlickTrainer runs one of two session types. <strong>Timed</strong> mode spawns targets continuously for a fixed duration (15, 30, or 60 seconds); the session ends the instant the clock runs out, even mid-target. <strong>Target Count</strong> mode instead ends after a fixed number of targets have been resolved (10, 30, or 50), however long that takes. Only one target is ever active at a time — the moment you hit or miss one, the next spawns immediately — so both modes are really measuring the same underlying thing (how efficiently you deal with a stream of one-at-a-time targets), just bounded differently.</p>
+
+  <h2>How accuracy is calculated</h2>
+  <p>Accuracy is the simplest number: <code>hits ÷ (hits + misses) × 100</code>. A &ldquo;miss&rdquo; is counted two ways — a target that isn't clicked before its lifespan runs out and disappears on its own, or a click landing on empty space inside the game area while a target is active. Both count against you identically, because both represent a target that didn't get clicked in time. If you haven't resolved any targets yet, accuracy reports as 0 rather than a division-by-zero error.</p>
+
+  <h2>How average reaction time is calculated</h2>
+  <p>Every time you land a hit, the app records the elapsed time between the moment that specific target spawned and the moment your click registered, in milliseconds. At the end of a session, your &ldquo;average time-to-click&rdquo; is simply the mean of that list — the sum of every recorded hit time divided by the number of hits. Misses don't contribute a number at all, since there's no meaningful &ldquo;time to click&rdquo; for a target you never clicked. This means average reaction time and accuracy are deliberately independent stats: a session with a fast average built on very few hits looks quite different from a slower average built on consistent hits, which is exactly why both are shown on the results screen rather than folded into one combined score.</p>
+
+  <h2>How throughput is calculated</h2>
+  <p>Throughput is your effective hit rate over real time: total hits divided by the session's total elapsed wall-clock time in seconds, reported as hits-per-second. Unlike average reaction time, which only looks at successful hits, throughput factors in the whole session — including time spent on targets you missed — so it's a decent single number for &ldquo;how much useful work did this session actually get done,&rdquo; separate from how clean any individual click was.</p>
+
+  <h2>How targets shrink</h2>
+  <p>Every target starts at 58 pixels in diameter and shrinks in a straight line down to 34 pixels over its 1,300 millisecond lifespan. The size at any given moment is a plain linear interpolation: work out how far through the lifespan the target currently is (clamped between 0 and 1 so it never shrinks past its final size even if a frame runs slightly long), then blend linearly from the start diameter to the end diameter by that fraction. In practice this means the first few hundred milliseconds after a target spawns give you the most forgiving hitbox, and the final stretch before it disappears asks for meaningfully more precision — which is also why your average time-to-click reflects a mix of &ldquo;easy, large-target&rdquo; hits and &ldquo;late, small-target&rdquo; hits rather than one fixed difficulty throughout a session.</p>
+  <p>Target position is randomized independently for every spawn, constrained so the entire target — not just its center — stays inside the visible game area, and there's no pattern or bias to where the next one appears.</p>
+
+  <h2>How the rating tiers work</h2>
+  <p>Your rating (Needs Practice through Superhuman) is looked up purely from your session's average time-to-click, checked against a fixed, ordered list of millisecond thresholds from fastest to slowest — the first tier whose ceiling your average falls under wins. Roughly: 220ms and under is Superhuman, up to 280ms is Elite, up to 340ms is Sharp, up to 400ms is Solid, up to 460ms is Casual, up to 550ms is Developing, and anything slower is Needs Practice. These bands were set so that the broad 350-450ms range casual players tend to land in — the range covered in our <a href="/articles/what-is-a-good-reaction-time.html">reaction time benchmarks article</a> — straddles the Solid and Casual tiers, rather than being labeled either extreme.</p>
+  <p>Alongside the tier, the results screen shows a plain-language comparison sentence built from the same 350-450ms casual band: if your average sits below it, you're told you're ahead of the casual range and roughly by how much; inside the band, you're told you're typical; above it, you're encouraged to keep training. It's a small piece of writing generated from one number, but it's meant to give the raw millisecond figure some context rather than leaving you to guess whether your number is good.</p>
+
+  <h2>What gets saved, and where</h2>
+  <p>FlickTrainer keeps two things in your browser's <code>localStorage</code> and nothing else: a best-record (best accuracy and best average time, tracked separately) for each mode-and-variant combination — Timed 30s and Target Count 50, for instance, keep independent bests — and a rolling history of your last 10 completed sessions, used to draw the trend chart and list on the results screen. Nothing is sent to a server; there is no server. Clearing your browser's site data or switching browsers/devices resets both, since there's nothing else backing them up.</p>
+
+  <h2>Why it's built this way</h2>
+  <p>All of the calculations above — accuracy, average reaction time, throughput, target sizing, rating lookup, and best-record comparison — are written as small, plain functions that take ordinary values in and return ordinary values out, with no dependency on the browser or the DOM. That's a deliberate choice: it means the scoring logic itself can be checked directly, independent of the visual game, before every change ships. If you're curious how a specific aim-training statistic like CPS-style throughput or reaction-time averaging is typically defined, the same principles show up across the aim-training tools covered in our <a href="/articles/history-of-aim-trainers.html">history of aim trainers</a> and <a href="/articles/flick-vs-tracking-aim.html">flicking vs. tracking</a> articles.</p>
+  <p>Curious how your own numbers hold up? <a href="/">Run a session</a> and see where you land against these tiers.</p>
+
+  <h2>Keep reading</h2>
+  <ul>
+    <li><a href="/articles/what-is-a-good-reaction-time.html">What's a good reaction time for aim training?</a></li>
+    <li><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. tracking: the two different skills behind &ldquo;good aim&rdquo;</a></li>
+    <li><a href="/articles/history-of-aim-trainers.html">The history of aim trainers, from Quake warmups to Kovaak's</a></li>
+    <li><a href="/">Train your aim</a></li>
+  </ul>
+</main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>© <span id="year"></span> flicktrainer.com</div>
+    <div class="footer-links">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+</footer>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+</body>
+</html>
