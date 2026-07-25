@@ -410,5 +410,270 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
+/* ============================================================
+   FLICK TRAINER — full pixel-art arcade LIGHT-GUN cabinet
+   (metekamil-grade). True 8-bit: a self-hosted pixel font (Press
+   Start 2P, OFL, same-origin — no third-party request), FLAT
+   colours, HARD pixel edges (layered box-shadow borders,
+   border-radius:0), image-rendering: pixelated, an animated
+   diagonal-stripe backdrop, chunky pixel buttons + bullseye target
+   sprites + a crosshair cursor + hit-sparks + a combo streak.
+   No smooth web gradients/glows — that's the difference between
+   "web pretending to be arcade" and actual arcade.
+   Genre = LIGHT-GUN SHOOTER (Time Crisis / Point Blank). Distinct
+   RED/ORANGE danger palette so it never reads like its siblings
+   (reflexzap = yellow/purple duel, cpsboost = pink fight,
+   wpmflex = cyan/green type-rush).
+   ============================================================ */
+@font-face {
+  font-family: "PixArc";
+  src: url("/assets/fonts/pressstart2p.woff2") format("woff2");
+  font-display: swap;
+}
+
+.cabinet {
+  /* pixel palette scoped to the cabinet so the article pages keep
+     the base theme untouched */
+  --pa: #ff6a1f;        /* orange — primary light-gun accent */
+  --pa-hot: #ff2f2f;    /* red — targets / danger */
+  --pa-yellow: #ffcf3f; /* warning yellow */
+  --pa-green: #35e07a;  /* accuracy / on-target */
+  --pa-ink: #150a06;    /* deep screen black */
+  --pa-bezel: #4a2a1e;  /* warm inner bezel */
+  --pa-deck: #1c1210;   /* deck body */
+  --pa-inset: #100906;  /* inset panel */
+  max-width: 860px;
+  margin: 8px auto 0;
+}
+
+.marquee-logo, .marquee-sub, .deck-label, .pc-title, .best-stat-label,
+.best-stat-val, .start-text, .coin-door, .rh-label, .rh-val,
+.attract-title, .attract-blink, .sc-banner, .rating-tier, .rating-label,
+.new-best-flag, .stat-label, .stat-val, .segmented button, .quit-btn,
+#change-mode-btn, .miss-flash {
+  font-family: "PixArc", var(--sans) !important;
+  text-transform: uppercase;
+  letter-spacing: 0 !important;
+  font-weight: 400 !important;
+}
+
+/* ---------- pixel marquee ---------- */
+.marquee {
+  position: relative; text-align: center; padding: 18px 12px 15px; margin-bottom: 14px;
+  background: #2a0808;
+  box-shadow: 0 0 0 4px #000, 0 0 0 8px var(--pa), 0 0 0 12px #000;
+}
+.marquee-logo { display: block; line-height: 1.15; }
+.marquee-logo .mq-1, .marquee-logo .mq-2 {
+  text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 4px 4px 0 #7a1500;
+}
+.marquee-logo .mq-1 { font-size: clamp(14px, 3.2vw, 24px); color: #fff; }
+.marquee-logo .mq-2 { font-size: clamp(19px, 4.2vw, 32px); color: var(--pa); }
+.marquee-sub { margin-top: 11px; font-size: 7px; color: var(--pa-yellow); text-shadow: 2px 2px 0 #000; }
+
+/* ---------- CRT: hard pixel bezel + animated stripe screen ---------- */
+.crt { position: relative; padding: 12px; background: #000; box-shadow: 0 0 0 4px #241010, inset 0 0 0 2px #000; }
+.crt-screen {
+  position: relative; overflow: hidden; image-rendering: pixelated;
+  padding: 16px;
+  background: repeating-linear-gradient(45deg, #241010 0 16px, #2f1614 16px 32px);
+  box-shadow: inset 0 0 0 3px #000, inset 0 0 0 6px var(--pa-bezel);
+  animation: stripe-scroll 3.4s linear infinite;
+}
+@keyframes stripe-scroll { from { background-position: 0 0; } to { background-position: 45px 0; } }
+.crt-screen::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: repeating-linear-gradient(180deg, rgba(0,0,0,.22) 0 2px, transparent 2px 4px);
+}
+.crt-screen > * { position: relative; z-index: 1; }
+
+/* ---------- attract / title screen (idle) ---------- */
+.range-attract { text-align: center; padding: 26px 12px 30px; }
+.attract-title { line-height: 1.4; }
+.attract-title .at-1 { display: block; font-size: clamp(15px, 3.6vw, 26px); color: #fff; text-shadow: 3px 3px 0 #000, 4px 4px 0 #7a1500; }
+.attract-title .at-2 { display: block; margin-top: 6px; font-size: clamp(20px, 5vw, 38px); color: var(--pa); text-shadow: 3px 3px 0 #000, 5px 5px 0 #7a1500; }
+.attract-targets { display: flex; justify-content: center; gap: 22px; margin: 22px 0 20px; }
+.attract-blink { font-size: 8px; color: var(--pa-yellow); text-shadow: 2px 2px 0 #000; }
+.blink { animation: pix-blink 1.05s steps(1) infinite; }
+@keyframes pix-blink { 50% { opacity: 0; } }
+
+/* pixel bullseye target sprite (also used live in the range) */
+.pix-target, .target {
+  border-radius: 0 !important;
+  background: var(--pa-hot);
+  box-shadow:
+    inset 0 0 0 4px #fff,
+    inset 0 0 0 8px var(--pa-hot),
+    inset 0 0 0 11px var(--pa-yellow),
+    0 0 0 3px #000,
+    0 0 0 5px #ffe4b0;
+  image-rendering: pixelated;
+}
+.pix-target { width: 46px; height: 46px; display: inline-block; position: relative; }
+.pix-target::after, .target::after {
+  content: ""; position: absolute; inset: 42% !important;
+  border-radius: 0 !important; background: #fff !important; opacity: 1 !important;
+}
+.pix-target--sm { width: 34px; height: 34px; }
+
+/* ---------- live shooting range ---------- */
+.crt-screen--range { padding: 12px; }
+.range-hud {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 8px 10px 12px; margin-bottom: 10px;
+}
+.rh-stat { display: flex; flex-direction: column; gap: 5px; min-width: 46px; }
+.rh-label { font-size: 6px; color: #c89a86; }
+.rh-val { font-size: 13px; color: #fff; text-shadow: 2px 2px 0 #000; }
+#hud-primary-val { color: var(--pa); }
+#hud-accuracy { color: var(--pa-green); }
+.rh-combo #hud-combo { color: var(--pa-yellow); }
+.rh-combo.is-hot #hud-combo { color: #fff; animation: combo-pop .28s steps(2) infinite; }
+@keyframes combo-pop { 50% { color: var(--pa); } }
+.quit-btn { margin-left: auto; font-size: 8px !important; padding: 8px 12px !important; }
+
+.game-area {
+  position: relative;
+  height: 46vh; min-height: 300px; max-height: 480px;
+  margin: 0; border: none !important; border-radius: 0 !important;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.34) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.34) 0 1px, transparent 1px 34px),
+    rgba(8,3,2,.62);
+  box-shadow: inset 0 0 0 3px #000, inset 0 0 0 6px var(--pa-bezel);
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" shape-rendering="crispEdges"><rect x="10" y="0" width="4" height="9" fill="black"/><rect x="10" y="15" width="4" height="9" fill="black"/><rect x="0" y="10" width="9" height="4" fill="black"/><rect x="15" y="10" width="9" height="4" fill="black"/><rect x="10" y="10" width="4" height="4" fill="black"/><rect x="11" y="1" width="2" height="7" fill="%23ff6a1f"/><rect x="11" y="16" width="2" height="7" fill="%23ff6a1f"/><rect x="1" y="11" width="7" height="2" fill="%23ff6a1f"/><rect x="16" y="11" width="7" height="2" fill="%23ff6a1f"/><rect x="11" y="11" width="2" height="2" fill="white"/></svg>') 12 12, crosshair;
+  touch-action: none; outline: none;
+}
+.target { cursor: inherit; padding: 0; border: none; transition: width .06s linear, height .06s linear, opacity .1s ease; }
+.target:hover { filter: brightness(1.08); }
+.target.hit { animation: target-hit .16s steps(3) forwards; }
+
+/* pixel hit-spark burst */
+.hit-spark {
+  position: absolute; width: 6px; height: 6px; transform: translate(-50%, -50%);
+  background: var(--pa-yellow); pointer-events: none; image-rendering: pixelated; z-index: 3;
+  box-shadow:
+    0 -15px 0 0 var(--pa), 0 15px 0 0 var(--pa), -15px 0 0 0 var(--pa), 15px 0 0 0 var(--pa),
+    11px 11px 0 0 #fff, -11px 11px 0 0 #fff, 11px -11px 0 0 #fff, -11px -11px 0 0 #fff;
+  animation: hit-spark .3s steps(3) forwards;
+}
+@keyframes hit-spark {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(.4); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+.miss-flash { color: var(--pa-hot) !important; font-size: 8px !important; text-shadow: 2px 2px 0 #000; }
+
+/* ---------- pixel deck ---------- */
+.deck {
+  margin-top: 14px; padding: 16px 18px; background: var(--pa-deck);
+  box-shadow: 0 0 0 4px #000, inset 0 0 0 2px var(--pa-bezel);
+}
+.deck--setup { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; align-items: start; }
+.deck-controls { display: flex; flex-direction: column; gap: 14px; }
+.deck-field { margin: 0; }
+.deck-label { display: block; font-size: 8px; color: var(--pa); text-shadow: 2px 2px 0 #000; margin-bottom: 9px; }
+.deck-side { display: flex; flex-direction: column; gap: 12px; }
+
+/* chunky pixel segmented buttons */
+.segmented {
+  display: flex; gap: 6px; border: none !important; border-radius: 0 !important; overflow: visible;
+}
+.segmented button {
+  flex: 1; border: none !important; border-radius: 0 !important;
+  background: var(--pa-inset); color: #d8bfb2;
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-bezel);
+  padding: 11px 6px; font-size: 9px; transition: none;
+}
+.segmented button:hover { color: #fff; filter: brightness(1.15); }
+.segmented button[aria-pressed="true"] {
+  background: var(--pa); color: #200a00; font-weight: 400 !important;
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px #ffd7ae;
+}
+.segmented--lg button { padding: 13px 8px; font-size: 11px; }
+
+/* player / marksman card */
+.player-card { padding: 12px 14px; background: var(--pa-inset); box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-bezel); }
+.pc-title { font-size: 8px; color: var(--pa-yellow); text-shadow: 2px 2px 0 #000; margin-bottom: 11px; }
+.best-row { display: flex; gap: 12px; margin: 0; padding: 0; border: none; }
+.best-stat { flex: 1; text-align: left; }
+.best-stat-label { display: block; font-size: 6px; color: #c89a86; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0; }
+.best-stat-val { display: block; font-size: 13px; color: var(--pa-green); text-shadow: 2px 2px 0 #000; }
+
+/* fire / reload button */
+.start-btn, #start-btn, #restart-btn {
+  width: 100%; padding: 16px 20px; border: none !important; border-radius: 0 !important;
+  background: var(--pa); color: #200a00;
+  box-shadow: 0 6px 0 #8a3400, 0 0 0 4px #000;
+  transition: transform .05s, box-shadow .05s; image-rendering: pixelated; margin: 0;
+}
+.start-btn:hover, #start-btn:hover, #restart-btn:hover { border: none; filter: brightness(1.07); color: #200a00; }
+.start-btn:active, #start-btn:active, #restart-btn:active { transform: translateY(6px); box-shadow: 0 0 0 4px #000; }
+.start-btn:disabled { opacity: .5; }
+.start-text { font-size: 13px; color: #200a00; text-shadow: none; }
+
+.coin-door { display: flex; align-items: center; gap: 7px; font-size: 6px; color: #a07868; }
+.coin-slot { width: 20px; height: 5px; background: #000; box-shadow: 0 0 0 2px var(--pa-bezel); }
+
+/* ---------- results: STAGE CLEAR + pixel GRADE ---------- */
+.stage-clear { text-align: center; padding: 22px 12px 26px; }
+.sc-banner { font-size: clamp(15px, 4vw, 26px); color: var(--pa-yellow); text-shadow: 3px 3px 0 #000, 4px 4px 0 #7a1500; }
+.rating-badge {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 10px;
+  margin: 18px auto 12px; padding: 16px 26px;
+  background: var(--pa-ink); border: none; border-radius: 0;
+  box-shadow: 0 0 0 3px #000, inset 0 0 0 2px var(--pa-bezel);
+}
+.rating-tier { font-size: 44px; color: var(--pa); text-shadow: 4px 4px 0 #000; }
+.rating-label { font-size: 12px; color: #fff; text-shadow: 2px 2px 0 #000; }
+.rating-compare { max-width: 480px; margin: 12px auto 0; color: #e7cfc2; font-size: 12.5px; line-height: 1.6; }
+
+.deck--results { display: block; }
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 480px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+.stat-tile {
+  background: var(--pa-inset); border: none; border-radius: 0;
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-bezel);
+  padding: 13px 10px; text-align: center;
+}
+.stat-label { display: block; font-size: 6px; color: #c89a86; margin-bottom: 9px; letter-spacing: 0; }
+.stat-val { display: block; font-size: 13px; color: #fff; text-shadow: 2px 2px 0 #000; }
+.new-best-flag {
+  margin-top: 14px; text-align: center;
+  background: var(--pa-inset); border: none; border-radius: 0;
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-green);
+  color: var(--pa-green); font-size: 9px; padding: 12px; text-shadow: 2px 2px 0 #000;
+}
+.btn-row { display: flex; gap: 12px; margin-top: 16px; align-items: stretch; }
+.btn-row #restart-btn { flex: 1; }
+#change-mode-btn {
+  border: none !important; border-radius: 0 !important; background: var(--pa-inset); color: #d8bfb2;
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-bezel); font-size: 9px; padding: 0 16px;
+}
+#change-mode-btn:hover { color: #fff; filter: brightness(1.15); }
+
+/* history panel keeps a hard pixel frame to match the cabinet */
+.cabinet .history-panel {
+  background: var(--pa-deck); border: none; border-radius: 0;
+  box-shadow: 0 0 0 4px #000, inset 0 0 0 2px var(--pa-bezel);
+  margin-top: 14px; max-width: none;
+}
+.cabinet .history-panel h2 { color: var(--pa); }
+.history-bar { background: var(--pa); border-radius: 0; }
+
+@media (max-width: 560px) {
+  .deck--setup { grid-template-columns: 1fr; }
+  .marquee-logo .mq-2 { font-size: 22px; }
+  .range-hud { gap: 10px; }
+  .rh-stat { min-width: 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-screen { animation: none; }
+  .blink, .rh-combo.is-hot #hud-combo { animation: none; }
+  .hit-spark { animation: none; opacity: 0; }
+  .target.hit { animation: none; opacity: 0; }
+}
+
 .erabbit-mark { display: block; width: 10px; margin: 0 0 0 auto; line-height: 0; }
 .erabbit-mark img { display: block; width: 10px; height: 10px; }
