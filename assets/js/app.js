@@ -304,11 +304,32 @@
   const hudHits = document.getElementById("hud-hits");
   const hudMisses = document.getElementById("hud-misses");
   const hudAccuracy = document.getElementById("hud-accuracy");
+  const hudCombo = document.getElementById("hud-combo");
+  const comboWrap = document.getElementById("combo-wrap");
   const quitBtn = document.getElementById("quit-btn");
 
   let session = null; // active session state, see startSession()
   let rafId = null;
   let countdownTimer = null;
+  let combo = 0; // presentation-only hit streak (never feeds the accuracy/time math)
+
+  // Flavour layer: a running hit streak shown in the HUD. Pure cosmetics.
+  function setCombo(n) {
+    combo = n;
+    if (hudCombo) hudCombo.textContent = String(combo);
+    if (comboWrap) comboWrap.classList.toggle("is-hot", combo >= 5);
+  }
+
+  // Flavour layer: a pixel hit-spark burst at a hit target's centre.
+  function spawnSpark(x, y) {
+    if (!gameArea) return;
+    const s = document.createElement("span");
+    s.className = "hit-spark";
+    s.style.left = x + "px";
+    s.style.top = y + "px";
+    gameArea.appendChild(s);
+    setTimeout(() => s.remove(), 320);
+  }
 
   function startSession() {
     session = {
@@ -326,6 +347,7 @@
 
     hudPrimaryLabel.textContent = mode === "timed" ? "Time" : "Targets";
     gameArea.innerHTML = "";
+    setCombo(0);
     updateHud();
     showScreen("game");
     // Defer first spawn one frame so the game-area has real layout dimensions.
@@ -410,10 +432,13 @@
       session.hits += 1;
       session.reactionTimes.push(performance.now() - session.activeTarget.spawnedAt);
       el.classList.add("hit");
+      spawnSpark(parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0); // flavour
+      setCombo(combo + 1); // flavour
       setTimeout(() => el.remove(), 180);
     } else {
       session.misses += 1;
       el.remove();
+      setCombo(0); // flavour: a target that timed out breaks the streak
     }
     session.activeTarget = null;
     updateHud();
@@ -432,6 +457,7 @@
     if (!session || session.ended) return;
     if (e.target !== gameArea) return; // target's own click handler already fired
     session.misses += 1;
+    setCombo(0); // flavour: a whiff breaks the streak
     updateHud();
     const flash = document.createElement("span");
     flash.className = "miss-flash";
