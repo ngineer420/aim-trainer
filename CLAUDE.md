@@ -84,13 +84,16 @@ They read from, but never write to, `session.hits` / `session.reactionTimes` /
   `res-hits/-misses/-accuracy/-avgtime/-throughput/-best-avgtime`,
   `new-best-flag`, `history-chart` / `history-list`. The arcade skin only
   restyles/rewraps these — it doesn't rename them.
-- **Do not duplicate click handlers.** The target has its own `click` listener
-  and `.game-area` has one empty-space `click` listener — keep pointer handling
-  as-is.
+- **Do not duplicate input handlers.** The target has its own `pointerdown`
+  listener and `.game-area` has one empty-space `pointerdown` listener — keep
+  pointer handling as-is. **`pointerdown`, never `click`:** it fires on press
+  rather than release, so it doesn't fold the user's mouse-release time into a
+  millisecond-scale reading, and pointer events already unify mouse/touch/pen so
+  a second listener would double-count. The siblings sample the same way.
 - **Cache-bust:** `styles.css?v=` and `app.js?v=` on **every** HTML page
   (index, 404, privacy, terms, articles/*). **Bump the `?v=` on any coupled
   HTML+CSS/JS change** or cached visitors get new HTML with stale CSS = a broken
-  raw page. Currently `?v=2`.
+  raw page. Currently `?v=3`.
 - **Ads: AdSense Auto ads only.** Single commented `<script>` in `<head>`
   (client `ca-pub-7560786263587509`). **NEVER add `.ad-slot` divs** or manual
   units.
@@ -103,10 +106,39 @@ They read from, but never write to, `session.hits` / `session.reactionTimes` /
 - The `erabb.it` 🐇 mark is the portfolio signature — **last in `<body>`**, flush
   to the corner, `cursor: default`.
 
+## The progression layer (app.js) — also never touches the measurement
+
+Ported from the sibling cabinets so all three sites share one engagement model.
+It only *reads* a finished session's summary; it never feeds hits/misses/times.
+
+- **XP / levels / ranks** — `xpForLevel` (`50·L·(L-1)`), `levelForXp`,
+  `titleForLevel`, `RANK_TITLES` (10 levels, Rookie → Dead-Eye God). XP is
+  weighted by the session's rating tier (`TIER_XP`) with bonuses for beating a
+  personal best, finishing a 60s run, a 20+ combo, and 90%+ accuracy.
+- **14 `ACHIEVEMENTS`**, each a `{id, icon, title, desc, check(ctx)}`; `ctx`
+  carries accuracy / avgReaction / hits / misses / maxCombo / totalSessions /
+  pbBeatenCount / streak / completedSixty / level.
+- **Daily streak** — `updateStreak()`; consecutive days extend it, a gap resets
+  it to 1, replaying the same day is a no-op.
+- **WebAudio synth** — `playTone()` + named blips (`playHitShot`,
+  `playMissThud`, `playStageClear`, `playAchievementChime`,
+  `playLevelUpFanfare`, `playNewBestSparkle`). Oscillators only, so the site
+  still ships **zero binary audio assets**. Muting persists; `#sound-toggle`.
+  The miss thud fires only on a real whiff, never on a target timing out —
+  unprompted noise for a non-action is worse than silence.
+- **Share string** — `#share-btn` copies an accuracy/time/rank line via
+  `navigator.clipboard` with a `document.execCommand` fallback, `#toast` confirms.
+
+New DOM ids: `status-chip`/`chip-level`/`chip-streak`, `sound-toggle`,
+`xp-rank-label`/`xp-progress-label`/`xp-bar-fill`,
+`achievements-panel`/`achievements-grid`, `unlock-stack`, `toast`, `share-btn`.
+
 ## localStorage keys
 
 `ft-theme` (light/dark), `flicktrainer:best:<mode>:<variant>` (per-mode best
-accuracy + avg time), `flicktrainer:history` (last 10 sessions).
+accuracy + avg time), `flicktrainer:history` (last 10 sessions),
+`flicktrainer:profile` (XP / sessions / streak / unlocked achievements),
+`flicktrainer:sound-muted`.
 
 ## Shipping
 

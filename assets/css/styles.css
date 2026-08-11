@@ -380,6 +380,164 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
 
 .notfound-crosshair { font-size: 64px; color: var(--accent); margin-bottom: 4px; }
 
+/* ---------- progression: level / streak chip ---------- */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color .12s ease, color .12s ease;
+}
+.status-chip:hover { border-color: var(--accent-dim); color: var(--text); }
+.status-chip .chip-level { color: var(--accent2); }
+.status-chip .chip-streak { color: var(--accent); }
+.status-chip .chip-streak.is-zero { color: var(--text-faint); }
+
+/* ---------- progression: XP bar on the marksman card ---------- */
+.pc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 14px;
+}
+.pc-rank { color: var(--accent2); font-size: 12px; font-weight: 700; }
+.pc-xp { color: var(--text-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+.pc-bar {
+  height: 10px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+}
+.pc-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width .3s ease;
+}
+
+/* ---------- progression: achievements ---------- */
+.achievements-panel {
+  max-width: 860px;
+  margin: 24px auto 0;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 18px;
+}
+.achievements-panel h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-faint);
+  margin: 0 0 14px;
+}
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 10px;
+}
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  text-align: center;
+  cursor: default;
+}
+.badge .badge-icon { font-size: 22px; line-height: 1; filter: grayscale(1) brightness(.6); opacity: .5; }
+.badge .badge-title {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--text-faint);
+  line-height: 1.2;
+}
+.badge.unlocked { border-color: var(--accent-dim); }
+.badge.unlocked .badge-icon { filter: none; opacity: 1; }
+.badge.unlocked .badge-title { color: var(--text); }
+
+/* ---------- progression: unlock toasts + copy toast ---------- */
+.unlock-stack {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: min(320px, calc(100vw - 32px));
+}
+.unlock-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-raised);
+  border: 1px solid var(--accent-dim);
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.4);
+  animation: unlockIn .35s cubic-bezier(.34,1.56,.64,1), unlockOut .3s ease-in 3.2s forwards;
+}
+.unlock-toast .unlock-icon { font-size: 22px; }
+.unlock-toast .unlock-text { line-height: 1.25; text-align: left; }
+.unlock-toast .unlock-kicker {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--accent);
+  font-weight: 800;
+}
+.unlock-toast .unlock-title { display: block; font-size: 13px; font-weight: 700; color: var(--text); }
+@keyframes unlockIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes unlockOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(30px); }
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 1300;
+  box-shadow: 0 10px 30px -8px rgba(0,0,0,.4);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .unlock-toast { animation: none !important; }
+  .pc-bar-fill, .toast { transition: none !important; }
+}
+
 /* ---------- screens ---------- */
 .screen { display: block; }
 .screen[hidden] { display: none; }
@@ -450,7 +608,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
 .best-stat-val, .start-text, .coin-door, .rh-label, .rh-val,
 .attract-title, .attract-blink, .sc-banner, .rating-tier, .rating-label,
 .new-best-flag, .stat-label, .stat-val, .segmented button, .quit-btn,
-#change-mode-btn, .miss-flash {
+#change-mode-btn, #share-btn, .pc-rank, .pc-xp, .miss-flash {
   font-family: "PixArc", var(--sans) !important;
   text-transform: uppercase;
   letter-spacing: 0 !important;
@@ -600,6 +758,19 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
 .best-stat-label { display: block; font-size: 6px; color: #c89a86; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0; }
 .best-stat-val { display: block; font-size: 13px; color: var(--pa-green); text-shadow: 2px 2px 0 #000; }
 
+/* rank + XP meter on the marksman card — hard pixel bar with a stepped fill */
+.cabinet .pc-top { margin-top: 13px; }
+.cabinet .pc-rank { font-size: 8px; color: var(--pa) !important; text-shadow: 2px 2px 0 #000; }
+.cabinet .pc-xp { font-size: 6px; color: #c89a86 !important; }
+.cabinet .pc-bar {
+  height: 10px; margin-top: 8px; border: none; border-radius: 0;
+  background: #000; box-shadow: inset 0 0 0 2px var(--pa-bezel);
+}
+.cabinet .pc-bar-fill {
+  background: var(--pa-yellow); border-radius: 0;
+  transition: width .3s steps(8);
+}
+
 /* fire / reload button */
 .start-btn, #start-btn, #restart-btn {
   width: 100%; padding: 16px 20px; border: none !important; border-radius: 0 !important;
@@ -644,13 +815,13 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
   box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-green);
   color: var(--pa-green); font-size: 9px; padding: 12px; text-shadow: 2px 2px 0 #000;
 }
-.btn-row { display: flex; gap: 12px; margin-top: 16px; align-items: stretch; }
-.btn-row #restart-btn { flex: 1; }
-#change-mode-btn {
-  border: none !important; border-radius: 0 !important; background: var(--pa-inset); color: #d8bfb2;
-  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-bezel); font-size: 9px; padding: 0 16px;
+.btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; align-items: stretch; }
+.btn-row #restart-btn { flex: 1 1 100%; }
+#change-mode-btn, #share-btn {
+  flex: 1; border: none !important; border-radius: 0 !important; background: var(--pa-inset); color: #d8bfb2;
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-bezel); font-size: 9px; padding: 12px 16px;
 }
-#change-mode-btn:hover { color: #fff; filter: brightness(1.15); }
+#change-mode-btn:hover, #share-btn:hover { color: #fff; filter: brightness(1.15); }
 
 /* history panel keeps a hard pixel frame to match the cabinet */
 .cabinet .history-panel {
