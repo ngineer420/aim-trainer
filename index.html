@@ -19,7 +19,7 @@
 <meta name="twitter:image" content="https://flicktrainer.com/assets/og-image.png">
 
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/css/styles.css?v=2">
+<link rel="stylesheet" href="/assets/css/styles.css?v=3">
 
 <script type="application/ld+json">
 {
@@ -48,6 +48,11 @@
       <span class="brand-tag">browser aim training</span>
     </a>
     <div class="header-actions">
+      <button id="status-chip" class="status-chip" type="button" title="View your rank, streak &amp; achievements">
+        <span class="chip-level" id="chip-level">LV 1</span>
+        <span class="chip-streak is-zero" id="chip-streak">🔥0</span>
+      </button>
+      <button id="sound-toggle" class="icon-btn" type="button" aria-label="Toggle sound effects" title="Toggle sound">🔊</button>
       <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark/light theme" title="Toggle theme">◐</button>
     </div>
   </div>
@@ -118,6 +123,11 @@
                 <span class="best-stat-val" id="best-avgtime-val">—</span>
               </div>
             </div>
+            <div class="pc-top">
+              <span class="pc-rank" id="xp-rank-label">Rookie</span>
+              <span class="pc-xp" id="xp-progress-label">0 / 100 XP</span>
+            </div>
+            <div class="pc-bar"><div class="pc-bar-fill" id="xp-bar-fill"></div></div>
           </div>
           <button type="button" id="start-btn" class="primary start-btn"><span class="start-text">Fire!</span></button>
           <div class="coin-door" aria-hidden="true"><span class="coin-slot"></span>Insert Coin · Free Play</div>
@@ -174,6 +184,7 @@
         <div class="new-best-flag" id="new-best-flag" hidden>New Record — Sharpshooter!</div>
         <div class="btn-row">
           <button type="button" id="restart-btn" class="primary start-btn"><span class="start-text">Reload</span></button>
+          <button type="button" id="share-btn" class="icon-btn">Copy result</button>
           <button type="button" id="change-mode-btn" class="icon-btn">Change Mode</button>
         </div>
       </div>
@@ -186,6 +197,11 @@
     </section>
   </div>
   <!-- /.cabinet -->
+
+  <section class="achievements-panel" id="achievements-panel">
+    <h2>Achievements</h2>
+    <div class="achievements-grid" id="achievements-grid"></div>
+  </section>
 
   <section class="container-narrow" style="padding-top:0;">
     <h2 style="margin-top:0;">About this aim trainer</h2>
@@ -234,6 +250,9 @@
   </section>
 </main>
 
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="unlock-stack" id="unlock-stack" aria-live="polite"></div>
+
 <footer class="site-footer">
   <div class="footer-inner">
     <div>© <span id="year"></span> flicktrainer.com</div>
@@ -244,7 +263,7 @@
   </div>
 </footer>
 
-<script src="/assets/js/app.js?v=2"></script>
+<script src="/assets/js/app.js?v=3"></script>
 <a href="https://erabb.it" class="erabbit-mark" aria-label="erabb.it"><img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐇</text></svg>" width="10" height="10" alt=""></a>
 </body>
 </html>

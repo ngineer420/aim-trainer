@@ -226,6 +226,306 @@
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
+  /* ============================================================
+     PROGRESSION LAYER — XP / ranks / achievements / streak / sound
+     Ported from the sibling cabinets (cpsboost, reflexzap) so all three
+     sites share one engagement model. Like the combo/spark flavour, none
+     of this feeds the accuracy or reaction-time measurement: it only
+     *reads* a finished session's summary.
+     ============================================================ */
+
+  const PROFILE_KEY = STORAGE_PREFIX + "profile";
+  const SOUND_KEY = STORAGE_PREFIX + "sound-muted";
+
+  const RANK_TITLES = [
+    { level: 1, title: "Rookie" },
+    { level: 2, title: "Plinker" },
+    { level: 3, title: "Marksman" },
+    { level: 4, title: "Sharpshooter" },
+    { level: 5, title: "Gunslinger" },
+    { level: 6, title: "Dead-Eye" },
+    { level: 7, title: "Ace Shot" },
+    { level: 8, title: "Sniper Elite" },
+    { level: 9, title: "Range Legend" },
+    { level: 10, title: "Dead-Eye God" },
+  ];
+
+  function xpForLevel(level) { return 50 * level * (level - 1); }
+  function levelForXp(xp) {
+    let level = 1;
+    while (xp >= xpForLevel(level + 1)) level += 1;
+    return Math.min(level, RANK_TITLES.length);
+  }
+  function titleForLevel(level) {
+    const entry = RANK_TITLES[Math.min(level, RANK_TITLES.length) - 1];
+    return entry ? entry.title : RANK_TITLES[RANK_TITLES.length - 1].title;
+  }
+
+  const ACHIEVEMENTS = [
+    { id: "first_session", icon: "🎯", title: "First Blood", desc: "Complete your first session.", check: (c) => c.totalSessions >= 1 },
+    { id: "sharp_eye", icon: "👁️", title: "Sharp Eye", desc: "Finish a session at 90%+ accuracy.", check: (c) => c.accuracy >= 90 },
+    { id: "flawless", icon: "🏵️", title: "Flawless Run", desc: "Finish a session of 5+ targets with zero misses.", check: (c) => c.misses === 0 && c.hits >= 5 },
+    { id: "quick_draw", icon: "⚡", title: "Quick Draw", desc: "Average under 300ms per target.", check: (c) => c.avgReaction != null && c.avgReaction < 300 },
+    { id: "superhuman", icon: "👑", title: "Superhuman", desc: "Average 220ms or better.", check: (c) => c.avgReaction != null && c.avgReaction <= 220 },
+    { id: "fifty_hits", icon: "💯", title: "Fifty Down", desc: "Land 50+ hits in one session.", check: (c) => c.hits >= 50 },
+    { id: "marathon", icon: "⏱️", title: "Range Marathon", desc: "Complete a 60-second session.", check: (c) => c.completedSixty },
+    { id: "combo_20", icon: "🔥", title: "Combo x20", desc: "Reach a 20-hit streak.", check: (c) => c.maxCombo >= 20 },
+    { id: "pb_breaker", icon: "🏆", title: "Record Breaker", desc: "Beat your personal best 5 times.", check: (c) => c.pbBeatenCount >= 5 },
+    { id: "streak_3", icon: "🔥", title: "3-Day Streak", desc: "Train 3 days in a row.", check: (c) => c.streak >= 3 },
+    { id: "streak_7", icon: "🔥", title: "Week Warrior", desc: "Train 7 days in a row.", check: (c) => c.streak >= 7 },
+    { id: "sessions_10", icon: "🕹️", title: "Range Regular", desc: "Complete 10 sessions.", check: (c) => c.totalSessions >= 10 },
+    { id: "sessions_50", icon: "🕹️", title: "Range Veteran", desc: "Complete 50 sessions.", check: (c) => c.totalSessions >= 50 },
+    { id: "level_10", icon: "⭐", title: "Dead-Eye God", desc: "Reach the max level.", check: (c) => c.level >= RANK_TITLES.length },
+  ];
+
+  const EMPTY_PROFILE = {
+    totalXP: 0,
+    totalSessions: 0,
+    pbBeatenCount: 0,
+    streak: 0,
+    lastPlayedDate: null,
+    achievements: [],
+  };
+
+  function loadProfile() {
+    const raw = loadJSON(PROFILE_KEY);
+    if (raw && typeof raw === "object") {
+      const merged = Object.assign({}, EMPTY_PROFILE, raw);
+      if (!Array.isArray(merged.achievements)) merged.achievements = [];
+      return merged;
+    }
+    return Object.assign({}, EMPTY_PROFILE);
+  }
+
+  function saveProfile(profile) { saveJSON(PROFILE_KEY, profile); }
+
+  function dateKey(d) { return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+
+  // A day played back-to-back extends the streak; a gap restarts it at 1.
+  // Replaying on a day already counted leaves the streak untouched.
+  function updateStreak(profile, now) {
+    const today = dateKey(now);
+    if (profile.lastPlayedDate === today) return profile.streak;
+    const yesterday = dateKey(new Date(now.getTime() - 86400000));
+    profile.streak = profile.lastPlayedDate === yesterday ? profile.streak + 1 : 1;
+    profile.lastPlayedDate = today;
+    return profile.streak;
+  }
+
+  // XP is weighted on the rating tier (i.e. reaction speed) with bonuses for
+  // the things worth encouraging: beating your own record, sitting through a
+  // full 60s run, holding a long streak, and shooting clean.
+  const TIER_XP = { "S": 45, "A+": 34, "A": 26, "B": 18, "C": 12, "D": 8 };
+
+  function xpForSession({ tier, accuracy, isNewBest, isFirstBest, completedSixty, maxCombo }) {
+    let xp = 10;
+    xp += TIER_XP[tier] != null ? TIER_XP[tier] : 4;
+    if (isNewBest && !isFirstBest) xp += 30;
+    if (completedSixty) xp += 12;
+    if (maxCombo >= 20) xp += 10;
+    if (accuracy >= 90) xp += 8;
+    return xp;
+  }
+
+  function recordSession({ summary, maxCombo, isNewBest, isFirstBest, completedSixty, now }) {
+    const profile = loadProfile();
+    const prevLevel = levelForXp(profile.totalXP);
+
+    profile.totalSessions += 1;
+    if (isNewBest && !isFirstBest) profile.pbBeatenCount += 1;
+    const streak = updateStreak(profile, now);
+    const gained = xpForSession({
+      tier: summary.rating.tier,
+      accuracy: summary.accuracy,
+      isNewBest,
+      isFirstBest,
+      completedSixty,
+      maxCombo,
+    });
+    profile.totalXP += gained;
+    const newLevel = levelForXp(profile.totalXP);
+
+    const ctx = {
+      accuracy: summary.accuracy,
+      avgReaction: summary.avgReaction,
+      hits: summary.hits,
+      misses: summary.misses,
+      totalSessions: profile.totalSessions,
+      pbBeatenCount: profile.pbBeatenCount,
+      streak,
+      completedSixty,
+      maxCombo,
+      level: newLevel,
+    };
+    const newlyUnlocked = [];
+    ACHIEVEMENTS.forEach((a) => {
+      if (profile.achievements.indexOf(a.id) === -1 && a.check(ctx)) {
+        profile.achievements.push(a.id);
+        newlyUnlocked.push(a);
+      }
+    });
+
+    saveProfile(profile);
+    return { profile, xpGained: gained, leveledUp: newLevel > prevLevel, newLevel, newlyUnlocked };
+  }
+
+  /* ---------------- progression rendering ---------------- */
+
+  const chipLevel = document.getElementById("chip-level");
+  const chipStreak = document.getElementById("chip-streak");
+  const xpRankLabel = document.getElementById("xp-rank-label");
+  const xpProgressLabel = document.getElementById("xp-progress-label");
+  const xpBarFill = document.getElementById("xp-bar-fill");
+  const achievementsGrid = document.getElementById("achievements-grid");
+  const unlockStack = document.getElementById("unlock-stack");
+
+  function renderStatusChips(profile) {
+    const level = levelForXp(profile.totalXP);
+    if (chipLevel) chipLevel.textContent = `LV ${level}`;
+    if (chipStreak) {
+      chipStreak.textContent = `🔥${profile.streak}`;
+      chipStreak.classList.toggle("is-zero", profile.streak === 0);
+    }
+    if (xpRankLabel) xpRankLabel.textContent = titleForLevel(level);
+    if (xpProgressLabel && xpBarFill) {
+      const base = xpForLevel(level);
+      const next = xpForLevel(level + 1);
+      const span = next - base || 1;
+      const into = Math.max(0, profile.totalXP - base);
+      const maxed = level >= RANK_TITLES.length;
+      xpProgressLabel.textContent = maxed ? "Max Level" : `${into} / ${span} XP`;
+      xpBarFill.style.width = (maxed ? 100 : Math.min(100, (into / span) * 100)) + "%";
+    }
+  }
+
+  function renderAchievements(profile) {
+    if (!achievementsGrid) return;
+    achievementsGrid.textContent = "";
+    ACHIEVEMENTS.forEach((a) => {
+      const unlocked = profile.achievements.indexOf(a.id) !== -1;
+      const el = document.createElement("div");
+      el.className = "badge" + (unlocked ? " unlocked" : "");
+      el.title = `${a.title}: ${a.desc}`;
+      const icon = document.createElement("span");
+      icon.className = "badge-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = a.icon;
+      const title = document.createElement("span");
+      title.className = "badge-title";
+      title.textContent = a.title;
+      el.appendChild(icon);
+      el.appendChild(title);
+      achievementsGrid.appendChild(el);
+    });
+  }
+
+  function queueUnlockToasts(items, kickerFor) {
+    if (!unlockStack || !items.length) return;
+    items.forEach((item, i) => {
+      setTimeout(() => {
+        const el = document.createElement("div");
+        el.className = "unlock-toast";
+        const icon = document.createElement("span");
+        icon.className = "unlock-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = item.icon;
+        const text = document.createElement("span");
+        text.className = "unlock-text";
+        const kicker = document.createElement("span");
+        kicker.className = "unlock-kicker";
+        kicker.textContent = kickerFor(item);
+        const title = document.createElement("span");
+        title.className = "unlock-title";
+        title.textContent = item.title;
+        text.appendChild(kicker);
+        text.appendChild(title);
+        el.appendChild(icon);
+        el.appendChild(text);
+        unlockStack.appendChild(el);
+        playAchievementChime();
+        setTimeout(() => el.remove(), 3600);
+      }, i * 550);
+    });
+  }
+
+  /* ---------------- arcade sound synth (WebAudio, no audio files) ----------------
+     Same synth the sibling cabinets use: short oscillator blips, so the site
+     still ships zero binary assets and makes zero third-party requests. */
+
+  let audioCtx = null;
+  let soundMuted = false;
+  try { soundMuted = localStorage.getItem(SOUND_KEY) === "1"; } catch { /* ignore */ }
+
+  function getAudioCtx() {
+    if (audioCtx) return audioCtx;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    audioCtx = new Ctx();
+    return audioCtx;
+  }
+
+  function playTone(freq, startOffset, duration, type, peakGain) {
+    if (soundMuted) return;
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || "sine";
+    osc.frequency.value = freq;
+    const t0 = ctx.currentTime + startOffset;
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(peakGain || 0.07, t0 + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.02);
+  }
+
+  // A hit is a light-gun "pew" — pitch rises with the combo so a hot streak
+  // audibly climbs.
+  function playHitShot(comboBoost) {
+    playTone(640 + Math.min(comboBoost || 0, 420), 0, 0.055, "square", 0.04);
+  }
+  function playMissThud() { playTone(120, 0, 0.16, "sawtooth", 0.05); }
+  function playAchievementChime() {
+    [660, 880, 1320].forEach((f, i) => playTone(f, i * 0.09, 0.16, "triangle", 0.07));
+  }
+  function playLevelUpFanfare() {
+    [523, 659, 784, 1046, 1318].forEach((f, i) => playTone(f, i * 0.08, 0.22, "square", 0.06));
+  }
+  function playNewBestSparkle() {
+    [988, 1318, 1568, 2093].forEach((f, i) => playTone(f, i * 0.06, 0.14, "sine", 0.07));
+  }
+  function playStageClear() {
+    [392, 523, 659, 784].forEach((f, i) => playTone(f, i * 0.1, 0.2, "square", 0.055));
+  }
+
+  const soundToggleBtn = document.getElementById("sound-toggle");
+  function renderSoundToggle() {
+    if (!soundToggleBtn) return;
+    soundToggleBtn.textContent = soundMuted ? "🔇" : "🔊";
+    soundToggleBtn.setAttribute("aria-pressed", String(!soundMuted));
+  }
+  if (soundToggleBtn) {
+    soundToggleBtn.addEventListener("click", () => {
+      soundMuted = !soundMuted;
+      try { localStorage.setItem(SOUND_KEY, soundMuted ? "1" : "0"); } catch { /* ignore */ }
+      renderSoundToggle();
+      if (!soundMuted) playHitShot(0);
+    });
+    renderSoundToggle();
+  }
+
+  const statusChipBtn = document.getElementById("status-chip");
+  if (statusChipBtn) {
+    statusChipBtn.addEventListener("click", () => {
+      const panel = document.getElementById("achievements-panel");
+      if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   /* ---------------- screens ---------------- */
 
   const screens = {
@@ -312,10 +612,13 @@
   let rafId = null;
   let countdownTimer = null;
   let combo = 0; // presentation-only hit streak (never feeds the accuracy/time math)
+  let maxCombo = 0; // best streak this session — feeds XP/achievements only
+  let lastResult = null; // last finished session, for the share string
 
   // Flavour layer: a running hit streak shown in the HUD. Pure cosmetics.
   function setCombo(n) {
     combo = n;
+    if (combo > maxCombo) maxCombo = combo;
     if (hudCombo) hudCombo.textContent = String(combo);
     if (comboWrap) comboWrap.classList.toggle("is-hot", combo >= 5);
   }
@@ -347,6 +650,7 @@
 
     hudPrimaryLabel.textContent = mode === "timed" ? "Time" : "Targets";
     gameArea.innerHTML = "";
+    maxCombo = 0;
     setCombo(0);
     updateHud();
     showScreen("game");
@@ -412,8 +716,15 @@
       resolveTarget(el, false, shrinkRaf);
     }, TARGET_LIFESPAN_MS);
 
-    el.addEventListener("click", (e) => {
+    // `pointerdown`, not `click`: it fires the instant the button goes down,
+    // which is the correct sample point for a tool measuring milliseconds —
+    // `click` only lands on mouseup, adding the user's release time to every
+    // reading. Pointer events unify mouse/touch/pen, so this single listener
+    // covers every input type without double-counting. Matches cpsboost and
+    // reflexzap, which already sample on pointerdown.
+    el.addEventListener("pointerdown", (e) => {
       e.stopPropagation();
+      e.preventDefault();
       resolveTarget(el, true, shrinkRaf);
     });
 
@@ -434,6 +745,7 @@
       el.classList.add("hit");
       spawnSpark(parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0); // flavour
       setCombo(combo + 1); // flavour
+      playHitShot(combo * 12); // flavour
       setTimeout(() => el.remove(), 180);
     } else {
       session.misses += 1;
@@ -453,11 +765,13 @@
 
   // Clicking empty space (not a target) inside the game area counts as a miss,
   // independent of whatever target happens to be active/shrinking at the time.
-  gameArea.addEventListener("click", (e) => {
+  // Same `pointerdown` sampling as the target itself, for the same reason.
+  gameArea.addEventListener("pointerdown", (e) => {
     if (!session || session.ended) return;
-    if (e.target !== gameArea) return; // target's own click handler already fired
+    if (e.target !== gameArea) return; // the target's own handler already fired
     session.misses += 1;
     setCombo(0); // flavour: a whiff breaks the streak
+    playMissThud(); // only on a real whiff — a timed-out target is not user input
     updateHud();
     const flash = document.createElement("span");
     flash.className = "miss-flash";
@@ -513,7 +827,30 @@
       ts: Date.now(),
     });
 
+    lastResult = { summary, mode: session.mode, variant: session.variant };
+
+    const gameResult = recordSession({
+      summary,
+      maxCombo,
+      isNewBest: improved,
+      isFirstBest: prevBest == null,
+      completedSixty: session.mode === "timed" && session.variant === 60,
+      now: new Date(),
+    });
+    renderStatusChips(gameResult.profile);
+    renderAchievements(gameResult.profile);
+
     renderResults(summary, record, improved);
+
+    playStageClear();
+    if (improved && prevBest != null) setTimeout(playNewBestSparkle, 420);
+    if (gameResult.leveledUp) {
+      setTimeout(playLevelUpFanfare, gameResult.newlyUnlocked.length ? 700 : 300);
+    }
+    queueUnlockToasts(gameResult.newlyUnlocked, () =>
+      gameResult.leveledUp ? `Achievement Unlocked · LV ${gameResult.newLevel}` : "Achievement Unlocked"
+    );
+
     session = null;
   }
 
@@ -533,6 +870,60 @@
   const historyChartEl = document.getElementById("history-chart");
 
   document.getElementById("restart-btn").addEventListener("click", startSession);
+
+  /* ---------------- share / copy result ---------------- */
+
+  const shareBtn = document.getElementById("share-btn");
+  const toastEl = document.getElementById("toast");
+  let toastTimer = null;
+
+  function showToast(msg) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1600);
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch { /* clipboard unsupported */ }
+    ta.remove();
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function buildShareText() {
+    if (!lastResult) return "";
+    const { summary, mode: m, variant: v } = lastResult;
+    const profile = loadProfile();
+    const level = levelForXp(profile.totalXP);
+    return (
+      `I shot ${formatPct(summary.accuracy)} accuracy at ${formatMs(summary.avgReaction)} per target ` +
+      `on FlickTrainer (${modeLabel(m, v)} — ${titleForLevel(level)}, LV ${level})! ` +
+      `Try to beat me: https://flicktrainer.com/`
+    );
+  }
+
+  if (shareBtn) {
+    shareBtn.addEventListener("click", () => {
+      const text = buildShareText();
+      if (!text) return;
+      copyText(text);
+      showToast("Copied!");
+    });
+  }
 
   function renderResults(summary, bestRecord, improved) {
     ratingTierEl.textContent = summary.rating.tier;
@@ -588,4 +979,12 @@
       historyListEl.appendChild(li);
     });
   }
+
+  /* ---------------- init ---------------- */
+
+  (function initProgression() {
+    const profile = loadProfile();
+    renderStatusChips(profile);
+    renderAchievements(profile);
+  })();
 })();
