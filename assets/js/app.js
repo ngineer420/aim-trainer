@@ -871,6 +871,100 @@
 
   document.getElementById("restart-btn").addEventListener("click", startSession);
 
+  /* ---------------- friend challenge links ----------------
+     A shared result is a URL, not a dead text blob:
+     `?ms=210&acc=88&mode=timed&v=30` opens the trainer already set to the
+     sender's mode and variant, with their average time-to-click shown as the
+     number to beat and a verdict once the session ends. Average time is the
+     primary metric (it's what the rating tiers key off), so that's what the
+     verdict compares; accuracy rides along as context.
+
+     Every param is validated before use — a hand-edited or hostile query
+     string can only ever degrade to "no challenge", never a broken session. */
+
+  const SITE_URL = "https://flicktrainer.com/";
+  const CHALLENGE_VARIANTS = { timed: [15, 30, 60], count: [10, 30, 50] };
+  const challengeBanner = document.getElementById("challenge-banner");
+  const challengeText = document.getElementById("challenge-text");
+  const challengeVerdict = document.getElementById("challenge-verdict");
+  let challenge = null; // { ms, acc, mode, variant } once a valid link is opened
+
+  function readChallengeFromUrl() {
+    let params;
+    try {
+      params = new URLSearchParams(window.location.search);
+    } catch {
+      return null;
+    }
+    const ms = Number(params.get("ms"));
+    // Outside a plausible time-to-click this is junk, not a challenge.
+    if (!Number.isFinite(ms) || ms < 50 || ms > 5000) return null;
+
+    const rawMode = params.get("mode");
+    const m = rawMode === "count" ? "count" : "timed";
+    const allowed = CHALLENGE_VARIANTS[m];
+    const rawVariant = parseInt(params.get("v"), 10);
+    const variant = allowed.indexOf(rawVariant) !== -1 ? rawVariant : allowed[1];
+
+    const rawAcc = Number(params.get("acc"));
+    const acc = Number.isFinite(rawAcc) && rawAcc >= 0 && rawAcc <= 100 ? rawAcc : null;
+
+    return { ms: Math.round(ms), acc: acc, mode: m, variant: variant };
+  }
+
+  function buildChallengeUrl(summary, m, v) {
+    const parts = [
+      "ms=" + Math.round(summary.avgReaction != null ? summary.avgReaction : 0),
+      "acc=" + Math.round(summary.accuracy),
+      "mode=" + encodeURIComponent(m),
+      "v=" + encodeURIComponent(v),
+    ];
+    return SITE_URL + "?" + parts.join("&");
+  }
+
+  // Drive the existing setup buttons rather than duplicating their state, so a
+  // challenge link leaves the UI in exactly the state a manual click would.
+  function selectSetup(m, v) {
+    const modeBtn = document.querySelector(`.mode-opt[data-mode="${m}"]`);
+    if (modeBtn) modeBtn.click();
+    const sel = m === "timed" ? `.duration-opt[data-duration="${v}"]` : `.count-opt[data-count="${v}"]`;
+    const variantBtn = document.querySelector(sel);
+    if (variantBtn) variantBtn.click();
+  }
+
+  function applyChallenge() {
+    challenge = readChallengeFromUrl();
+    if (!challenge) return;
+    selectSetup(challenge.mode, challenge.variant);
+    if (challengeText) {
+      const accPart = challenge.acc != null ? ` at ${Math.round(challenge.acc)}% accuracy` : "";
+      challengeText.textContent =
+        `A friend averaged ${challenge.ms}ms${accPart} on ${modeLabel(challenge.mode, challenge.variant)}. Beat it.`;
+    }
+    if (challengeBanner) challengeBanner.hidden = false;
+  }
+
+  function renderChallengeVerdict(summary) {
+    if (!challengeVerdict) return;
+    if (!challenge || summary.avgReaction == null) {
+      challengeVerdict.hidden = true;
+      return;
+    }
+    const diff = Math.round(summary.avgReaction) - challenge.ms; // negative = faster
+    challengeVerdict.hidden = false;
+    challengeVerdict.classList.toggle("is-win", diff < 0);
+    challengeVerdict.classList.toggle("is-loss", diff > 0);
+    if (diff < 0) {
+      challengeVerdict.textContent =
+        `Challenge beaten — ${Math.abs(diff)}ms faster than their ${challenge.ms}ms.`;
+    } else if (diff === 0) {
+      challengeVerdict.textContent = `Dead heat — you matched their ${challenge.ms}ms exactly.`;
+    } else {
+      challengeVerdict.textContent =
+        `Challenge missed by ${diff}ms — they averaged ${challenge.ms}ms. Try again.`;
+    }
+  }
+
   /* ---------------- share / copy result ---------------- */
 
   const shareBtn = document.getElementById("share-btn");
@@ -912,7 +1006,7 @@
     return (
       `I shot ${formatPct(summary.accuracy)} accuracy at ${formatMs(summary.avgReaction)} per target ` +
       `on FlickTrainer (${modeLabel(m, v)} — ${titleForLevel(level)}, LV ${level})! ` +
-      `Try to beat me: https://flicktrainer.com/`
+      `Beat me: ${buildChallengeUrl(summary, m, v)}`
     );
   }
 
@@ -921,7 +1015,7 @@
       const text = buildShareText();
       if (!text) return;
       copyText(text);
-      showToast("Copied!");
+      showToast("Challenge link copied!");
     });
   }
 
@@ -937,6 +1031,7 @@
     resThroughput.textContent = `${summary.throughput.toFixed(2)}/s`;
     resBestAvgTime.textContent = bestRecord && bestRecord.avgTime != null ? formatMs(bestRecord.avgTime) : "—";
     newBestFlag.hidden = !improved;
+    renderChallengeVerdict(summary);
 
     renderHistory();
     showScreen("results");
@@ -986,5 +1081,6 @@
     const profile = loadProfile();
     renderStatusChips(profile);
     renderAchievements(profile);
+    applyChallenge();
   })();
 })();

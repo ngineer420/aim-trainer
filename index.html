@@ -19,7 +19,7 @@
 <meta name="twitter:image" content="https://flicktrainer.com/assets/og-image.png">
 
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/css/styles.css?v=3">
+<link rel="stylesheet" href="/assets/css/styles.css?v=4">
 
 <script type="application/ld+json">
 {
@@ -63,6 +63,11 @@
     <div class="marquee">
       <div class="marquee-logo"><span class="mq-1">Flick</span><span class="mq-2">Trainer</span></div>
       <div class="marquee-sub">Dead-Eye Shooting Range · flicktrainer.com</div>
+    </div>
+
+    <div class="challenge-banner" id="challenge-banner" hidden>
+      <span class="cb-kicker">Challenge</span>
+      <span class="cb-text" id="challenge-text"></span>
     </div>
 
     <!-- ===================== SETUP SCREEN ===================== -->
@@ -182,9 +187,10 @@
           <div class="stat-tile"><span class="stat-label">Best Time</span><span class="stat-val" id="res-best-avgtime">—</span></div>
         </div>
         <div class="new-best-flag" id="new-best-flag" hidden>New Record — Sharpshooter!</div>
+        <div class="challenge-verdict" id="challenge-verdict" hidden></div>
         <div class="btn-row">
           <button type="button" id="restart-btn" class="primary start-btn"><span class="start-text">Reload</span></button>
-          <button type="button" id="share-btn" class="icon-btn">Copy result</button>
+          <button type="button" id="share-btn" class="icon-btn">Copy challenge link</button>
           <button type="button" id="change-mode-btn" class="icon-btn">Change Mode</button>
         </div>
       </div>
@@ -263,7 +269,7 @@
   </div>
 </footer>
 
-<script src="/assets/js/app.js?v=3"></script>
+<script src="/assets/js/app.js?v=4"></script>
 <a href="https://erabb.it" class="erabbit-mark" aria-label="erabb.it"><img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐇</text></svg>" width="10" height="10" alt=""></a>
 </body>
 </html>

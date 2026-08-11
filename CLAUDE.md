@@ -93,7 +93,7 @@ They read from, but never write to, `session.hits` / `session.reactionTimes` /
 - **Cache-bust:** `styles.css?v=` and `app.js?v=` on **every** HTML page
   (index, 404, privacy, terms, articles/*). **Bump the `?v=` on any coupled
   HTML+CSS/JS change** or cached visitors get new HTML with stale CSS = a broken
-  raw page. Currently `?v=3`.
+  raw page. Currently `?v=4`.
 - **Ads: AdSense Auto ads only.** Single commented `<script>` in `<head>`
   (client `ca-pub-7560786263587509`). **NEVER add `.ad-slot` divs** or manual
   units.
@@ -132,6 +132,31 @@ It only *reads* a finished session's summary; it never feeds hits/misses/times.
 New DOM ids: `status-chip`/`chip-level`/`chip-streak`, `sound-toggle`,
 `xp-rank-label`/`xp-progress-label`/`xp-bar-fill`,
 `achievements-panel`/`achievements-grid`, `unlock-stack`, `toast`, `share-btn`.
+
+## Friend challenge links (URL state)
+
+A shared result is a **URL**, not a dead text blob. `#share-btn` copies
+`https://flicktrainer.com/?ms=<avg>&acc=<pct>&mode=<timed|count>&v=<variant>`;
+opening that link preselects the sender's mode + variant, shows
+`#challenge-banner` under the marquee (visible on every screen, since it's a
+sibling of the three `.screen` sections), and renders `#challenge-verdict`
+(`.is-win` / `.is-loss`) on the results deck once a session ends.
+
+- `ms` — must be finite and within `50 <= ms <= 5000`, else no challenge.
+- `mode` — `count` or anything else falls back to `timed`.
+- `v` — must be in `CHALLENGE_VARIANTS[mode]` (`timed`: 15/30/60,
+  `count`: 10/30/50), else falls back to that mode's middle option.
+- `acc` — optional, `0..100`; it's context in the banner only.
+- **Average time-to-click is the metric the verdict compares** (it's what the
+  rating tiers key off); accuracy rides along as flavour. **Lower is better**,
+  so `diff < 0` is the win branch — same as reflexzap, inverted vs cpsboost.
+- **Validate every param before use.** A hand-edited or hostile query string
+  must only ever degrade to "no challenge"; banner text is set via
+  `textContent` so it can't inject markup.
+- `applyChallenge()` drives the existing `.mode-opt` / `.duration-opt` /
+  `.count-opt` buttons via `.click()` rather than duplicating their state, so a
+  challenge link leaves the UI exactly as a manual click would (including
+  `refreshBestRow()`).
 
 ## localStorage keys
 

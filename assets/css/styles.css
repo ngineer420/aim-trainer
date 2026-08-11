@@ -815,6 +815,37 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
   box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-green);
   color: var(--pa-green); font-size: 9px; padding: 12px; text-shadow: 2px 2px 0 #000;
 }
+
+/* friend-challenge banner (under the marquee, visible on every screen) +
+   post-session verdict on the results deck */
+.challenge-banner {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  flex-wrap: wrap; text-align: center;
+  margin: 0 0 12px; padding: 9px 12px;
+  background: var(--pa-deck); border-radius: 0;
+  box-shadow: 0 0 0 4px #000, inset 0 0 0 2px var(--pa-yellow);
+}
+.challenge-banner[hidden] { display: none; }
+.cb-kicker {
+  font-family: "PixArc", var(--sans); font-size: 7px; letter-spacing: 0;
+  text-transform: uppercase; color: #200a00; background: var(--pa-yellow);
+  padding: 4px 6px; text-shadow: none;
+}
+.cb-text { font-size: 12px; line-height: 1.5; color: #ffe2b0; text-shadow: 1px 1px 0 #000; }
+.challenge-verdict {
+  margin-top: 12px; text-align: center; padding: 12px;
+  font-size: 12px; line-height: 1.5; border-radius: 0;
+  background: var(--pa-inset); color: #e7cfc2;
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-bezel);
+  text-shadow: 1px 1px 0 #000;
+}
+.challenge-verdict[hidden] { display: none; }
+.challenge-verdict.is-win {
+  color: var(--pa-green); box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-green);
+}
+.challenge-verdict.is-loss {
+  color: #ff9a7a; box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-hot);
+}
 .btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; align-items: stretch; }
 .btn-row #restart-btn { flex: 1 1 100%; }
 #change-mode-btn, #share-btn {
