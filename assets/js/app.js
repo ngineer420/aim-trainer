@@ -209,20 +209,10 @@
     return mode === "timed" ? `Timed ${variant}s` : `${variant} targets`;
   }
 
-  /* ---------------- theme toggle ---------------- */
-
-  (function initTheme() {
-    const stored = localStorage.getItem("ft-theme");
-    if (stored) document.documentElement.setAttribute("data-theme", stored);
-    document.getElementById("theme-toggle").addEventListener("click", () => {
-      const current =
-        document.documentElement.getAttribute("data-theme") ||
-        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-      const next = current === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("ft-theme", next);
-    });
-  })();
+  /* The theme toggle used to live here. It now lives in assets/js/nav.js, which
+     every page loads: the header carrying `#theme-toggle` is shared across all
+     eight files, and app.js is only on index.html, so binding it here left the
+     stored `ft-theme` unread on the guides and legal pages. */
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
