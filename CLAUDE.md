@@ -21,7 +21,35 @@ nothing is uploaded.
 - `assets/css/styles.css` — the whole design system, one file. The base theme is
   at the top; the **"FLICK TRAINER — full pixel-art arcade LIGHT-GUN cabinet"**
   block at the very bottom is the arcade skin (overrides base for the cabinet).
+- `assets/js/nav.js` — loaded by **every** page: the theme toggle (moved out of
+  app.js, which only index.html loads) plus the portfolio toolbar's fades,
+  active-chip centring, Escape and click-outside. Pure enhancement — the nav is
+  fully usable with JS off.
 - `assets/fonts/pressstart2p.woff2` — self-hosted pixel font (see below).
+- `tools/sync_nav.py` + `tools/nav_data.py` — the nav is **generated**, not
+  hand-pasted (see below).
+
+## The chrome is one shared block — never hand-edit it
+
+Eight hand-duplicated .html files used to carry two drifting header variants.
+They now carry one: identical skip link, identical `<header class="site-header">`
+with the same brand markup and a `#theme-toggle`, then the toolbar. Only
+index.html adds `#status-chip` and `#sound-toggle` inside `.header-actions`,
+because those drive app.js and app.js is only on the game page.
+
+The `<nav class="toolbar">` between `<!-- nav:start -->` and `<!-- nav:end -->` is
+rendered by `python3 tools/sync_nav.py` from `tools/nav_data.py` — the four
+guides are the rail, the sheet is those four plus a hub link back to the trainer.
+`sync_nav.py` is copied verbatim across the portfolio (**do not modify it**);
+`nav_data.py` is the only per-site file. Edit the nav there and re-run, never by
+hand in eight files. `python3 tools/sync_nav.py --check` exits nonzero on drift —
+run it before shipping. Spec: ngineer420/ngineer420.github.io#13.
+
+**Neither the header nor the toolbar is sticky**, and neither may become sticky:
+nothing in the chrome may overlay an AdSense anchor unit. The header is a fixed
+54px and the bar 45px, so closed chrome is 99px on every page, under the
+portfolio's 100px budget — check with a measurement, not by eye, before adding
+anything to either.
 
 ## Design language — the pixel-art light-gun cabinet
 
@@ -91,9 +119,10 @@ They read from, but never write to, `session.hits` / `session.reactionTimes` /
   millisecond-scale reading, and pointer events already unify mouse/touch/pen so
   a second listener would double-count. The siblings sample the same way.
 - **Cache-bust:** `styles.css?v=` and `app.js?v=` on **every** HTML page
-  (index, 404, privacy, terms, articles/*). **Bump the `?v=` on any coupled
+  (index, 404, privacy, terms, articles/*), and `nav.js?v=` alongside them.
+  **Bump the `?v=` on any coupled
   HTML+CSS/JS change** or cached visitors get new HTML with stale CSS = a broken
-  raw page. Currently `?v=4`.
+  raw page. Currently `?v=5`.
 - **Ads: AdSense Auto ads only.** Single commented `<script>` in `<head>`
   (client `ca-pub-7560786263587509`). **NEVER add `.ad-slot` divs** or manual
   units.
