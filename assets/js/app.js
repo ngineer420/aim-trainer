@@ -51,6 +51,87 @@
     };
   }
 
+  /** Percent of a session spent with the cursor inside the tracking target. */
+  function calcTimeOnTarget(onTargetMs, elapsedMs) {
+    if (!elapsedMs || elapsedMs <= 0) return 0;
+    return Math.min(100, Math.max(0, (onTargetMs / elapsedMs) * 100));
+  }
+
+  /** Centres of a cols x rows grid filling an area, row-major. Gridshot's nine
+      slots: fixed, so every target appears at one of nine known places and the
+      drill trains flicks between known points rather than visual search. */
+  function gridCellCenters(areaWidth, areaHeight, cols, rows) {
+    const out = [];
+    const cw = areaWidth / cols;
+    const ch = areaHeight / rows;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) out.push({ x: (c + 0.5) * cw, y: (r + 0.5) * ch });
+    }
+    return out;
+  }
+
+  /** Largest target that sits inside a grid cell with room around it. */
+  function gridTargetDiameter(areaWidth, areaHeight, cols, rows) {
+    const cell = Math.min(areaWidth / cols, areaHeight / rows);
+    return Math.max(24, Math.min(84, cell * 0.62));
+  }
+
+  /**
+   * Where the tracking target is at `tMs` into the session.
+   *
+   * Two sine components per axis at incommensurate frequencies: the sum never
+   * repeats inside a session, has no corners for the cursor to cut, and is a
+   * pure function of time — so the path can be checked from Node and the
+   * render loop never has to remember where the target was last frame.
+   * Amplitudes total 1, so the normalised coordinate stays in [0, 1] and the
+   * target can never leave the box.
+   */
+  function trackingPathPoint(tMs, path, areaWidth, areaHeight, diameter) {
+    const r = diameter / 2;
+    const availW = Math.max(0, areaWidth - diameter);
+    const availH = Math.max(0, areaHeight - diameter);
+    const t = tMs / 1000;
+    const ux = 0.5 + 0.5 * (0.62 * Math.sin(path.wx1 * t + path.px1) + 0.38 * Math.sin(path.wx2 * t + path.px2));
+    const uy = 0.5 + 0.5 * (0.62 * Math.sin(path.wy1 * t + path.py1) + 0.38 * Math.sin(path.wy2 * t + path.py2));
+    return {
+      x: r + Math.min(1, Math.max(0, ux)) * availW,
+      y: r + Math.min(1, Math.max(0, uy)) * availH,
+    };
+  }
+
+  /** A fresh randomised path. `rng` is injectable so a check can pin it. */
+  function randomTrackingPath(rng) {
+    const random = typeof rng === "function" ? rng : Math.random;
+    const band = (lo, hi) => lo + random() * (hi - lo);
+    const phase = () => random() * Math.PI * 2;
+    return {
+      wx1: band(0.30, 0.55), wx2: band(0.75, 1.25), px1: phase(), px2: phase(),
+      wy1: band(0.35, 0.60), wy2: band(0.85, 1.40), py1: phase(), py2: phase(),
+    };
+  }
+
+  /** Is a point inside a circular target of `diameter` centred on cx, cy? */
+  function isInsideTarget(px, py, cx, cy, diameter) {
+    const dx = px - cx;
+    const dy = py - cy;
+    const r = diameter / 2;
+    return dx * dx + dy * dy <= r * r;
+  }
+
+  /**
+   * Best-so-far for an engine's headline number, in whichever direction counts
+   * as better for that engine. Split from updateBestRecord because accuracy
+   * and average time are not the headline on every drill: gridshot's is
+   * targets/second and tracking's is percent time-on-target.
+   */
+  function updateBestMetric(prevBest, value, lowerIsBetter) {
+    const prev = typeof prevBest === "number" && !Number.isNaN(prevBest) ? prevBest : null;
+    if (value == null || Number.isNaN(value)) return { best: prev, improved: false };
+    if (prev === null) return { best: value, improved: true };
+    const better = lowerIsBetter ? value < prev : value > prev;
+    return { best: better ? value : prev, improved: better };
+  }
+
   // Rating tiers keyed by average reaction time (ms). Ordered fastest-first;
   // first tier whose `max` the average is <= wins. Casual players typically
   // average ~350-450ms, which straddles the Solid/Casual tiers below.
@@ -63,6 +144,62 @@
     { max: 550, tier: "D", label: "Developing" },
     { max: Infinity, tier: "E", label: "Needs Practice" },
   ];
+
+  /* The other three drills measure different motor skills in different units,
+     so they cannot share the millisecond ladder above. Each has its own, in the
+     same seven-tier shape, ordered best-first and read with `min`. These are
+     calibrated against the drills as they are configured here — target size,
+     lifespan, grid spacing — and are a difficulty curve, not a measurement of
+     any population. */
+  const GRIDSHOT_TIERS = [
+    { min: 2.2, tier: "S", label: "Superhuman" },
+    { min: 1.8, tier: "A+", label: "Elite" },
+    { min: 1.5, tier: "A", label: "Sharp" },
+    { min: 1.2, tier: "B", label: "Solid" },
+    { min: 0.9, tier: "C", label: "Casual" },
+    { min: 0.6, tier: "D", label: "Developing" },
+    { min: -Infinity, tier: "E", label: "Needs Practice" },
+  ];
+
+  const TRACKING_TIERS = [
+    { min: 85, tier: "S", label: "Superhuman" },
+    { min: 75, tier: "A+", label: "Elite" },
+    { min: 65, tier: "A", label: "Sharp" },
+    { min: 52, tier: "B", label: "Solid" },
+    { min: 40, tier: "C", label: "Casual" },
+    { min: 25, tier: "D", label: "Developing" },
+    { min: -Infinity, tier: "E", label: "Needs Practice" },
+  ];
+
+  const PRECISION_TIERS = [
+    { min: 95, tier: "S", label: "Superhuman" },
+    { min: 90, tier: "A+", label: "Elite" },
+    { min: 84, tier: "A", label: "Sharp" },
+    { min: 76, tier: "B", label: "Solid" },
+    { min: 66, tier: "C", label: "Casual" },
+    { min: 52, tier: "D", label: "Developing" },
+    { min: -Infinity, tier: "E", label: "Needs Practice" },
+  ];
+
+  /* Which number each drill is rated on, and which way is better. Flick is the
+     original engine and keeps the original ladder untouched. */
+  const ENGINE_RATINGS = {
+    flick: { key: "avgReaction", lowerIsBetter: true, tiers: RATING_TIERS },
+    precision: { key: "accuracy", lowerIsBetter: false, tiers: PRECISION_TIERS },
+    gridshot: { key: "throughput", lowerIsBetter: false, tiers: GRIDSHOT_TIERS },
+    tracking: { key: "onTargetPct", lowerIsBetter: false, tiers: TRACKING_TIERS },
+  };
+
+  /** Rating tier for a finished summary under a given engine's ladder. */
+  function getRatingForEngine(summary, engine) {
+    const cfg = ENGINE_RATINGS[engine] || ENGINE_RATINGS.flick;
+    const v = summary ? summary[cfg.key] : null;
+    if (v == null || Number.isNaN(v)) return { tier: "—", label: "No data" };
+    for (const t of cfg.tiers) {
+      if (cfg.lowerIsBetter ? v <= t.max : v >= t.min) return t;
+    }
+    return cfg.tiers[cfg.tiers.length - 1];
+  }
 
   const CASUAL_AVG_LOW = 350;
   const CASUAL_AVG_HIGH = 450;
@@ -94,13 +231,36 @@
     return `Casual players average ${CASUAL_AVG_LOW}-${CASUAL_AVG_HIGH}ms — your ${ms}ms average has room to catch up. Keep training!`;
   }
 
-  /** Builds the full stat summary for a finished session from raw counters. */
-  function buildSessionSummary({ hits, misses, reactionTimes, elapsedMs }) {
+  /** A plain-language sentence for the drills the millisecond ladder does not
+      describe. Same job as compareToAverage, one per engine. */
+  function compareForEngine(summary, engine) {
+    if (!summary) return "";
+    if (engine === "gridshot") {
+      const tps = summary.throughput;
+      if (!tps) return "Clear some targets to see how your rate compares.";
+      return `You cleared ${tps.toFixed(2)} targets per second. Steady grid shooting sits around 1.2-1.5/s; past 1.8/s you are flicking without hunting for the next target.`;
+    }
+    if (engine === "tracking") {
+      const pct = summary.onTargetPct || 0;
+      return `Your crosshair was inside the target for ${pct.toFixed(1)}% of the session. Around 50-65% is solid smooth tracking; past 75% means you are leading the target rather than chasing it.`;
+    }
+    if (engine === "precision") {
+      const acc = summary.accuracy || 0;
+      return `You hit ${acc.toFixed(1)}% of what you shot at. Precision is scored on that first: a slow, clean run beats a fast, sloppy one here, which is the opposite of the flick drill.`;
+    }
+    return compareToAverage(summary.avgReaction);
+  }
+
+  /** Builds the full stat summary for a finished session from raw counters.
+      `engine` and `onTargetMs` default so the original call site is unchanged. */
+  function buildSessionSummary({ hits, misses, reactionTimes, elapsedMs, onTargetMs, engine }) {
     const accuracy = calcAccuracy(hits, misses);
     const avgReaction = calcAverageReactionTime(reactionTimes);
     const throughput = calcThroughput(hits, elapsedMs);
-    const rating = getRatingTier(avgReaction);
-    return { hits, misses, accuracy, avgReaction, throughput, rating };
+    const onTargetPct = onTargetMs == null ? null : calcTimeOnTarget(onTargetMs, elapsedMs);
+    const summary = { hits, misses, accuracy, avgReaction, throughput, onTargetPct, elapsedMs };
+    summary.rating = engine ? getRatingForEngine(summary, engine) : getRatingTier(avgReaction);
+    return summary;
   }
 
   /**
@@ -132,13 +292,26 @@
     calcAccuracy,
     calcAverageReactionTime,
     calcThroughput,
+    calcTimeOnTarget,
     targetSizeAtElapsed,
     randomTargetPosition,
+    gridCellCenters,
+    gridTargetDiameter,
+    trackingPathPoint,
+    randomTrackingPath,
+    isInsideTarget,
     getRatingTier,
+    getRatingForEngine,
     compareToAverage,
+    compareForEngine,
     buildSessionSummary,
     updateBestRecord,
+    updateBestMetric,
     RATING_TIERS,
+    GRIDSHOT_TIERS,
+    TRACKING_TIERS,
+    PRECISION_TIERS,
+    ENGINE_RATINGS,
     CASUAL_AVG_LOW,
     CASUAL_AVG_HIGH,
   };
@@ -157,14 +330,87 @@
   if (typeof document === "undefined") return;
 
   const STORAGE_PREFIX = "flicktrainer:";
-  const HISTORY_KEY = STORAGE_PREFIX + "history";
   const HISTORY_LIMIT = 10;
   const TARGET_START_DIAMETER = 58;
   const TARGET_END_DIAMETER = 34;
   const TARGET_LIFESPAN_MS = 1300;
 
+  /* ---------------- which drill this page runs ----------------
+     One engine file, six pages. `data-engine` on <body> picks the drill and
+     `data-preset` optionally retunes the flick spawner for a specific game.
+     Both absent is the original trainer at `/`, so index.html behaves exactly
+     as it did.
+
+     The three tier-1 drills measure different motor skills in different units
+     — targets/second, percent time-on-target, accuracy-first — which is why
+     each is its own page rather than another duration button. Precision is
+     deliberately NOT a third engine: it is the same single-target spawner with
+     shrinking off and a small target, because that is all it needs to be. */
+  const ENGINE_CONFIG = {
+    flick: {
+      spawner: "single", shrink: true,
+      start: TARGET_START_DIAMETER, end: TARGET_END_DIAMETER, life: TARGET_LIFESPAN_MS,
+      primary: "avgReaction", primaryLowerIsBetter: true,
+    },
+    precision: {
+      // Static and small. Nothing shrinks, so there is no reward for rushing —
+      // the only way to score is to put the crosshair in the right place.
+      spawner: "single", shrink: false,
+      start: 26, end: 26, life: 1900,
+      primary: "accuracy", primaryLowerIsBetter: false,
+    },
+    gridshot: {
+      spawner: "grid", cols: 3, rows: 3, live: 3,
+      primary: "throughput", primaryLowerIsBetter: false,
+    },
+    tracking: {
+      spawner: "track", diameter: 76,
+      primary: "onTargetPct", primaryLowerIsBetter: false,
+    },
+  };
+
+  /* Game presets: the flick spawner with target size and time-to-live retuned
+     to the exposure window each game actually gives you. Stated on each page. */
+  const PRESETS = {
+    // Small hitboxes, one-tap kills, and peeks resolved in well under a second.
+    valorant: { start: 44, end: 30, life: 1100 },
+    // Larger player models and long angle holds, so the window is the widest.
+    csgo: { start: 52, end: 38, life: 1500 },
+    // Big targets that are almost never still, and the shortest window of the
+    // three because an opponent is normally behind a wall a moment later.
+    fortnite: { start: 68, end: 44, life: 900 },
+  };
+
+  const DRILL_NAMES = {
+    flick: "FlickTrainer",
+    gridshot: "FlickTrainer Gridshot",
+    tracking: "FlickTrainer Tracking",
+    precision: "FlickTrainer Precision",
+  };
+  const ENGINE = document.body.getAttribute("data-engine") || "flick";
+  const PRESET = document.body.getAttribute("data-preset") || null;
+  const DRILL_NAME = DRILL_NAMES[ENGINE] || DRILL_NAMES.flick;
+  const CFG = Object.assign(
+    {},
+    ENGINE_CONFIG[ENGINE] || ENGINE_CONFIG.flick,
+    (PRESET && PRESETS[PRESET]) || {}
+  );
+
+  /* Each drill keeps its own history. One shared 10-entry list looked tidy and
+     was not: a gridshot run would evict the tracking run before it, and the
+     tracking page would then say "no sessions on this drill yet" for a drill
+     you had just played twice. Flick keeps the legacy unscoped key so nobody
+     loses the history they already have; presets share it, because a preset is
+     the flick drill with different numbers rather than a different drill. */
+  const HISTORY_KEY = STORAGE_PREFIX + "history" + (ENGINE === "flick" ? "" : ":" + ENGINE);
+
+  // Legacy key shape for the original trainer, so nobody loses a personal best
+  // to this change; every new drill namespaces itself.
   function bestKey(mode, variant) {
-    return `${STORAGE_PREFIX}best:${mode}:${variant}`;
+    const scope = ENGINE === "flick" && !PRESET
+      ? ""
+      : (PRESET ? PRESET : ENGINE) + ":";
+    return `${STORAGE_PREFIX}best:${scope}${mode}:${variant}`;
   }
 
   function loadJSON(key) {
@@ -543,6 +789,7 @@
   const countOptionsEl = document.getElementById("count-options");
   const bestAccuracyVal = document.getElementById("best-accuracy-val");
   const bestAvgTimeVal = document.getElementById("best-avgtime-val");
+  const bestPrimaryVal = document.getElementById("best-primary-val");
 
   function currentVariant() {
     return mode === "timed" ? duration : targetCount;
@@ -550,8 +797,10 @@
 
   function refreshBestRow() {
     const best = loadJSON(bestKey(mode, currentVariant()));
-    bestAccuracyVal.textContent = best ? formatPct(best.accuracy) : "—";
-    bestAvgTimeVal.textContent = best && best.avgTime != null ? formatMs(best.avgTime) : "—";
+    // Each drill's card shows only the stats that drill actually produces.
+    if (bestAccuracyVal) bestAccuracyVal.textContent = best ? formatPct(best.accuracy) : "—";
+    if (bestAvgTimeVal) bestAvgTimeVal.textContent = best && best.avgTime != null ? formatMs(best.avgTime) : "—";
+    if (bestPrimaryVal) bestPrimaryVal.textContent = formatPrimary(best ? best.primary : null);
   }
 
   modeButtons.forEach((btn) => {
@@ -595,6 +844,7 @@
   const hudMisses = document.getElementById("hud-misses");
   const hudAccuracy = document.getElementById("hud-accuracy");
   const hudCombo = document.getElementById("hud-combo");
+  const hudOnTarget = document.getElementById("hud-ontarget");
   const comboWrap = document.getElementById("combo-wrap");
   const quitBtn = document.getElementById("quit-btn");
 
@@ -628,13 +878,16 @@
     session = {
       mode,
       variant: currentVariant(),
+      engine: ENGINE,
       hits: 0,
       misses: 0,
       reactionTimes: [],
       startedAt: performance.now(),
       endsAt: mode === "timed" ? performance.now() + duration * 1000 : null,
       targetsSpawned: 0,
-      activeTarget: null, // {el, spawnedAt, timeoutId}
+      activeTarget: null, // {el, spawnedAt, timeoutId} — single-target spawner
+      grid: null,         // gridshot state
+      track: null,        // tracking state
       ended: false,
     };
 
@@ -644,18 +897,44 @@
     setCombo(0);
     updateHud();
     showScreen("game");
-    // Defer first spawn one frame so the game-area has real layout dimensions.
+    // Defer the first spawn one frame so the game-area has real layout
+    // dimensions — the grid and the tracking path both need them.
     requestAnimationFrame(() => {
-      spawnTarget();
+      if (!session || session.ended) return;
+      if (CFG.spawner === "grid") startGrid();
+      else if (CFG.spawner === "track") startTracking();
+      else spawnTarget();
       tick();
     });
   }
 
+  /* Shared hit/miss accounting. Every spawner routes through these two, so the
+     three drills cannot drift apart on what counts as a hit or when the clock
+     is read. The flavour layer (spark, combo, blip) hangs off them and, as
+     ever, never feeds back into the counters. */
+  function registerHit(spawnedAt, x, y) {
+    session.hits += 1;
+    session.reactionTimes.push(performance.now() - spawnedAt);
+    spawnSpark(x, y);
+    setCombo(combo + 1);
+    playHitShot(combo * 12);
+  }
+
+  function registerMiss(fromUser) {
+    session.misses += 1;
+    setCombo(0);
+    if (fromUser) playMissThud();
+  }
+
   function updateHud() {
     if (!session) return;
-    hudHits.textContent = String(session.hits);
-    hudMisses.textContent = String(session.misses);
-    hudAccuracy.textContent = formatPct(calcAccuracy(session.hits, session.misses));
+    if (hudHits) hudHits.textContent = String(session.hits);
+    if (hudMisses) hudMisses.textContent = String(session.misses);
+    if (hudAccuracy) hudAccuracy.textContent = formatPct(calcAccuracy(session.hits, session.misses));
+    if (hudOnTarget && session.track) {
+      const elapsed = performance.now() - session.startedAt;
+      hudOnTarget.textContent = formatPct(calcTimeOnTarget(session.track.onTargetMs, elapsed));
+    }
     if (session.mode === "timed") {
       const remaining = Math.max(0, session.endsAt - performance.now());
       hudPrimaryVal.textContent = (remaining / 1000).toFixed(1) + "s";
@@ -666,6 +945,7 @@
 
   function tick() {
     if (!session || session.ended) return;
+    if (session.track) stepTracking();
     updateHud();
     if (session.mode === "timed" && performance.now() >= session.endsAt) {
       endSession();
@@ -677,14 +957,14 @@
   function spawnTarget() {
     if (!session || session.ended) return;
     const rect = gameArea.getBoundingClientRect();
-    const pos = randomTargetPosition(rect.width, rect.height, TARGET_START_DIAMETER);
+    const pos = randomTargetPosition(rect.width, rect.height, CFG.start);
     const el = document.createElement("button");
     el.type = "button";
     el.className = "target";
     el.style.left = pos.x + "px";
     el.style.top = pos.y + "px";
-    el.style.width = TARGET_START_DIAMETER + "px";
-    el.style.height = TARGET_START_DIAMETER + "px";
+    el.style.width = CFG.start + "px";
+    el.style.height = CFG.start + "px";
     el.setAttribute("aria-label", "Target");
 
     const spawnedAt = performance.now();
@@ -693,18 +973,26 @@
     let shrinkRaf = null;
     function shrink() {
       const elapsed = performance.now() - spawnedAt;
-      const size = targetSizeAtElapsed(elapsed, TARGET_LIFESPAN_MS, TARGET_START_DIAMETER, TARGET_END_DIAMETER);
+      const size = targetSizeAtElapsed(elapsed, CFG.life, CFG.start, CFG.end);
       el.style.width = size + "px";
       el.style.height = size + "px";
-      if (elapsed < TARGET_LIFESPAN_MS && session.activeTarget && session.activeTarget.el === el) {
+      // `session` and not just `session.activeTarget`: endSession() nulls the
+      // whole session, and one already-scheduled frame of this loop still
+      // fires afterwards. It threw a TypeError at the end of every single run
+      // — harmless, because the frame does nothing useful by then, but it put
+      // a red line in the console after each session and would have masked a
+      // real error.
+      if (elapsed < CFG.life && session && session.activeTarget && session.activeTarget.el === el) {
         shrinkRaf = requestAnimationFrame(shrink);
       }
     }
-    shrinkRaf = requestAnimationFrame(shrink);
+    // Precision targets are static: no shrink loop at all, so there is nothing
+    // in the frame budget and nothing that rewards shooting early.
+    if (CFG.shrink) shrinkRaf = requestAnimationFrame(shrink);
 
     const timeoutId = setTimeout(() => {
       resolveTarget(el, false, shrinkRaf);
-    }, TARGET_LIFESPAN_MS);
+    }, CFG.life);
 
     // `pointerdown`, not `click`: it fires the instant the button goes down,
     // which is the correct sample point for a tool measuring milliseconds —
@@ -730,17 +1018,17 @@
     if (shrinkRaf) cancelAnimationFrame(shrinkRaf);
 
     if (wasHit) {
-      session.hits += 1;
-      session.reactionTimes.push(performance.now() - session.activeTarget.spawnedAt);
+      registerHit(
+        session.activeTarget.spawnedAt,
+        parseFloat(el.style.left) || 0,
+        parseFloat(el.style.top) || 0
+      );
       el.classList.add("hit");
-      spawnSpark(parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0); // flavour
-      setCombo(combo + 1); // flavour
-      playHitShot(combo * 12); // flavour
       setTimeout(() => el.remove(), 180);
     } else {
-      session.misses += 1;
+      // A target that timed out is a miss, but not user input — no thud.
+      registerMiss(false);
       el.remove();
-      setCombo(0); // flavour: a target that timed out breaks the streak
     }
     session.activeTarget = null;
     updateHud();
@@ -753,15 +1041,160 @@
     spawnTarget();
   }
 
+  /* ---------------- gridshot ----------------
+     Nine fixed cells, three targets live at once, and nothing ever times out:
+     a target sits there until it is shot. That is what makes the score a rate
+     rather than a latency — you are measured on how many you can clear in the
+     session, not on how quickly you answered any one of them. */
+
+  function startGrid() {
+    const rect = gameArea.getBoundingClientRect();
+    session.grid = {
+      cells: gridCellCenters(rect.width, rect.height, CFG.cols, CFG.rows),
+      diameter: gridTargetDiameter(rect.width, rect.height, CFG.cols, CFG.rows),
+      occupied: new Set(),
+    };
+    for (let i = 0; i < CFG.live; i++) spawnGridTarget();
+  }
+
+  function freeCellIndex() {
+    if (!session || !session.grid) return -1;
+    const free = [];
+    for (let i = 0; i < session.grid.cells.length; i++) {
+      if (!session.grid.occupied.has(i)) free.push(i);
+    }
+    if (!free.length) return -1;
+    return free[Math.floor(Math.random() * free.length)];
+  }
+
+  function spawnGridTarget() {
+    const index = freeCellIndex();
+    if (index < 0) return;
+    spawnGridTargetAt(index);
+  }
+
+  function spawnGridTargetAt(index) {
+    const g = session.grid;
+    const cell = g.cells[index];
+    g.occupied.add(index);
+
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "target";
+    el.style.left = cell.x + "px";
+    el.style.top = cell.y + "px";
+    el.style.width = g.diameter + "px";
+    el.style.height = g.diameter + "px";
+    el.setAttribute("aria-label", "Target");
+
+    const spawnedAt = performance.now();
+    session.targetsSpawned += 1;
+
+    // Same sampling rule as everywhere else on this site: pointerdown, once.
+    el.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      resolveGridTarget(el, index, spawnedAt);
+    });
+
+    gameArea.appendChild(el);
+  }
+
+  function resolveGridTarget(el, index, spawnedAt) {
+    if (!session || session.ended || !session.grid) return;
+    if (!session.grid.occupied.has(index)) return; // already resolved
+
+    registerHit(spawnedAt, parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0);
+    el.classList.add("hit");
+    setTimeout(() => el.remove(), 180);
+
+    // Pick the replacement cell while this one is still marked occupied, so the
+    // next target never appears in the slot you have just cleared.
+    const next = freeCellIndex();
+    session.grid.occupied.delete(index);
+    if (next >= 0) spawnGridTargetAt(next);
+
+    updateHud();
+  }
+
+  /* ---------------- tracking ----------------
+     One target on a smooth randomised path, scored on the share of the session
+     the cursor spent inside it. The cursor position is sampled on pointermove
+     and the time is integrated on the rAF frame, so the score does not depend
+     on how often the pointer happens to fire. The area rect is cached and
+     refreshed only on scroll/resize: reading it per pointermove would be a
+     forced layout in the hot path. */
+
+  function cacheTrackRect() {
+    if (!session || !session.track) return;
+    const r = gameArea.getBoundingClientRect();
+    session.track.rect = r;
+    session.track.w = r.width;
+    session.track.h = r.height;
+  }
+
+  function startTracking() {
+    const el = document.createElement("div");
+    el.className = "target target--track";
+    el.style.width = CFG.diameter + "px";
+    el.style.height = CFG.diameter + "px";
+    gameArea.appendChild(el);
+
+    session.track = {
+      el,
+      path: randomTrackingPath(Math.random),
+      d: CFG.diameter,
+      rect: null, w: 0, h: 0,
+      cursor: null,       // area-relative pointer position, null until it moves
+      inside: false,
+      onTargetMs: 0,
+      lastT: performance.now(),
+    };
+    cacheTrackRect();
+    stepTracking();
+  }
+
+  function stepTracking() {
+    const t = session.track;
+    if (!t) return;
+    const now = performance.now();
+    const dt = Math.min(100, now - t.lastT); // a backgrounded tab must not bank time
+    t.lastT = now;
+
+    const p = trackingPathPoint(now - session.startedAt, t.path, t.w, t.h, t.d);
+    // transform only: the target moves every frame and must never touch layout.
+    t.el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) translate(-50%, -50%)`;
+
+    const on = !!t.cursor && isInsideTarget(t.cursor.x, t.cursor.y, p.x, p.y, t.d);
+    if (on) t.onTargetMs += dt;
+    if (on !== t.inside) {
+      t.inside = on;
+      t.el.classList.toggle("is-on", on);
+    }
+  }
+
+  gameArea.addEventListener("pointermove", (e) => {
+    if (!session || session.ended || !session.track) return;
+    const r = session.track.rect;
+    if (!r) return;
+    session.track.cursor = { x: e.clientX - r.left, y: e.clientY - r.top };
+  });
+  gameArea.addEventListener("pointerleave", () => {
+    if (session && session.track) session.track.cursor = null;
+  });
+  window.addEventListener("scroll", cacheTrackRect, { passive: true });
+  window.addEventListener("resize", cacheTrackRect);
+
   // Clicking empty space (not a target) inside the game area counts as a miss,
   // independent of whatever target happens to be active/shrinking at the time.
   // Same `pointerdown` sampling as the target itself, for the same reason.
   gameArea.addEventListener("pointerdown", (e) => {
     if (!session || session.ended) return;
+    // Tracking is not a clicking drill: there is nothing to whiff, so a click
+    // in the range must not invent a miss out of a stray mouse button.
+    if (session.engine === "tracking") return;
     if (e.target !== gameArea) return; // the target's own handler already fired
-    session.misses += 1;
-    setCombo(0); // flavour: a whiff breaks the streak
-    playMissThud(); // only on a real whiff — a timed-out target is not user input
+    registerMiss(true);
     updateHud();
     const flash = document.createElement("span");
     flash.className = "miss-flash";
@@ -802,18 +1235,30 @@
       misses: session.misses,
       reactionTimes: session.reactionTimes,
       elapsedMs,
+      onTargetMs: session.track ? session.track.onTargetMs : null,
+      engine: session.engine,
     });
 
     const key = bestKey(session.mode, session.variant);
     const prevBest = loadJSON(key);
-    const { record, improved } = updateBestRecord(prevBest, summary);
+    const { record, improved: statsImproved } = updateBestRecord(prevBest, summary);
+    // ...plus this drill's headline number, whichever direction is better.
+    const primary = updateBestMetric(
+      prevBest ? prevBest.primary : null,
+      summary[CFG.primary],
+      !!CFG.primaryLowerIsBetter
+    );
+    record.primary = primary.best;
+    const improved = statsImproved || primary.improved;
     saveJSON(key, record);
 
     pushHistory({
       mode: session.mode,
       variant: session.variant,
+      engine: session.engine,
       accuracy: summary.accuracy,
       avgReaction: summary.avgReaction,
+      primary: summary[CFG.primary],
       ts: Date.now(),
     });
 
@@ -855,6 +1300,17 @@
   const resAvgTime = document.getElementById("res-avgtime");
   const resThroughput = document.getElementById("res-throughput");
   const resBestAvgTime = document.getElementById("res-best-avgtime");
+  const resOnTarget = document.getElementById("res-ontarget");
+  const resBestPrimary = document.getElementById("res-best-primary");
+
+  /** The drill's headline number, formatted in its own units. */
+  function formatPrimary(v) {
+    if (v == null || Number.isNaN(v)) return "—";
+    if (typeof v !== "number") return "—";
+    if (CFG.primary === "avgReaction") return formatMs(v);
+    if (CFG.primary === "throughput") return `${v.toFixed(2)}/s`;
+    return formatPct(v);
+  }
   const newBestFlag = document.getElementById("new-best-flag");
   const historyListEl = document.getElementById("history-list");
   const historyChartEl = document.getElementById("history-chart");
@@ -872,7 +1328,10 @@
      Every param is validated before use — a hand-edited or hostile query
      string can only ever degrade to "no challenge", never a broken session. */
 
-  const SITE_URL = "https://flicktrainer.com/";
+  // A challenge link has to come back to the drill it was set on, so the page's
+  // own canonical is the base rather than a hardcoded site root.
+  const canonicalLink = document.querySelector('link[rel="canonical"]');
+  const SITE_URL = (canonicalLink && canonicalLink.href) || "https://flicktrainer.com/";
   const CHALLENGE_VARIANTS = { timed: [15, 30, 60], count: [10, 30, 50] };
   const challengeBanner = document.getElementById("challenge-banner");
   const challengeText = document.getElementById("challenge-text");
@@ -926,6 +1385,14 @@
     challenge = readChallengeFromUrl();
     if (!challenge) return;
     selectSetup(challenge.mode, challenge.variant);
+    /* Gridshot and tracking ship no mode selector — both are scored over a
+       session length, so "30 targets" is not a run they can do. selectSetup
+       silently leaves the page on its own settings when those buttons are
+       absent, so read them back before writing the banner: it has to name the
+       run the visitor is about to play, not the one in the link. The verdict
+       compares `ms` alone, so nothing about the comparison changes. */
+    challenge.mode = mode;
+    challenge.variant = currentVariant();
     if (challengeText) {
       const accPart = challenge.acc != null ? ` at ${Math.round(challenge.acc)}% accuracy` : "";
       challengeText.textContent =
@@ -995,7 +1462,7 @@
     const level = levelForXp(profile.totalXP);
     return (
       `I shot ${formatPct(summary.accuracy)} accuracy at ${formatMs(summary.avgReaction)} per target ` +
-      `on FlickTrainer (${modeLabel(m, v)} — ${titleForLevel(level)}, LV ${level})! ` +
+      `on ${DRILL_NAME} (${modeLabel(m, v)} — ${titleForLevel(level)}, LV ${level})! ` +
       `Beat me: ${buildChallengeUrl(summary, m, v)}`
     );
   }
@@ -1012,14 +1479,18 @@
   function renderResults(summary, bestRecord, improved) {
     ratingTierEl.textContent = summary.rating.tier;
     ratingLabelEl.textContent = summary.rating.label;
-    ratingCompareEl.textContent = compareToAverage(summary.avgReaction);
+    ratingCompareEl.textContent = compareForEngine(summary, ENGINE);
 
-    resHits.textContent = String(summary.hits);
-    resMisses.textContent = String(summary.misses);
-    resAccuracy.textContent = formatPct(summary.accuracy);
-    resAvgTime.textContent = formatMs(summary.avgReaction);
-    resThroughput.textContent = `${summary.throughput.toFixed(2)}/s`;
-    resBestAvgTime.textContent = bestRecord && bestRecord.avgTime != null ? formatMs(bestRecord.avgTime) : "—";
+    // Every tile is optional: the drills do not all report the same six
+    // numbers, so each page ships only the tiles that mean something on it.
+    if (resHits) resHits.textContent = String(summary.hits);
+    if (resMisses) resMisses.textContent = String(summary.misses);
+    if (resAccuracy) resAccuracy.textContent = formatPct(summary.accuracy);
+    if (resAvgTime) resAvgTime.textContent = formatMs(summary.avgReaction);
+    if (resThroughput) resThroughput.textContent = `${summary.throughput.toFixed(2)}/s`;
+    if (resOnTarget) resOnTarget.textContent = summary.onTargetPct == null ? "—" : formatPct(summary.onTargetPct);
+    if (resBestAvgTime) resBestAvgTime.textContent = bestRecord && bestRecord.avgTime != null ? formatMs(bestRecord.avgTime) : "—";
+    if (resBestPrimary) resBestPrimary.textContent = formatPrimary(bestRecord ? bestRecord.primary : null);
     newBestFlag.hidden = !improved;
     renderChallengeVerdict(summary);
 
@@ -1040,26 +1511,55 @@
       return;
     }
 
-    const maxAvg = Math.max(...history.map((h) => h.avgReaction || 0), 1);
+    // Belt and braces on top of the per-drill key: entries written before the
+    // drills existed carry no `engine` and are flick's, and a stale mixed list
+    // must never draw a targets-per-second run on the same axis as a
+    // millisecond one — that would claim they were comparable.
+    const rows = history.filter((h) => (h.engine || "flick") === ENGINE);
+    if (rows.length === 0) {
+      const li = document.createElement("li");
+      li.className = "h-empty";
+      li.textContent = "No sessions on this drill yet.";
+      historyListEl.appendChild(li);
+      return;
+    }
+
+    // Entries written before the drills existed carry no `primary`; on the
+    // original trainer that number was the average reaction time.
+    const historyPrimary = (h) => (h.primary != null ? h.primary : h.avgReaction);
+    const maxPrimary = Math.max(...rows.map((h) => Math.abs(historyPrimary(h) || 0)), 0.0001);
     // Oldest-to-newest left-to-right for the sparkline-style bars.
-    history
+    rows
       .slice()
       .reverse()
       .forEach((h) => {
         const bar = document.createElement("div");
         bar.className = "history-bar";
-        const heightPct = h.avgReaction ? Math.max(6, (h.avgReaction / maxAvg) * 100) : 6;
+        const v = historyPrimary(h);
+        const heightPct = v ? Math.max(6, (Math.abs(v) / maxPrimary) * 100) : 6;
         bar.style.height = heightPct + "%";
-        bar.title = `${modeLabel(h.mode, h.variant)} — ${formatMs(h.avgReaction)}`;
+        bar.title = `${modeLabel(h.mode, h.variant)} — ${formatPrimary(historyPrimary(h))}`;
         historyChartEl.appendChild(bar);
       });
 
-    history.forEach((h) => {
+    /* The row's second number is whichever of the drill's stats the headline is
+       not — the original trainer printed accuracy beside its millisecond
+       average and should keep doing so. Tracking gets neither: it never
+       registers a hit or a miss, so its accuracy is 0/0 and printing it would
+       be a fabricated zero. */
+    const secondary = (h) => {
+      if (ENGINE === "tracking") return "";
+      if (CFG.primary === "accuracy") return h.avgReaction != null ? formatMs(h.avgReaction) : "";
+      return h.accuracy != null ? formatPct(h.accuracy) : "";
+    };
+
+    rows.forEach((h) => {
       const li = document.createElement("li");
       const date = new Date(h.ts);
+      const second = secondary(h);
       li.innerHTML =
         `<span class="h-mode">${modeLabel(h.mode, h.variant)}</span>` +
-        `<span>${formatPct(h.accuracy)} · ${formatMs(h.avgReaction)}</span>` +
+        `<span>${formatPrimary(historyPrimary(h))}${second ? " · " + second : ""}</span>` +
         `<span>${date.toLocaleDateString()}</span>`;
       historyListEl.appendChild(li);
     });

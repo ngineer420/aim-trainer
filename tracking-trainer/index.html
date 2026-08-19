@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracking Aim Trainer - Free Smooth-Target Tracking Drill</title>
+<meta name="description" content="Free tracking aim trainer in your browser. Keep your crosshair inside one target moving on a smooth randomised path; scored on the percentage of the session you stayed on it. No download, nothing uploaded.">
+<link rel="canonical" href="https://flicktrainer.com/tracking-trainer/">
+<meta name="theme-color" content="#1a0808">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Tracking Aim Trainer - Free Smooth-Target Tracking Drill">
+<meta property="og:description" content="Free tracking aim trainer in your browser. Keep your crosshair inside one target moving on a smooth randomised path; scored on the percentage of the session you stayed on it. No download, nothing uploaded.">
+<meta property="og:url" content="https://flicktrainer.com/tracking-trainer/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tracking Aim Trainer - Free Smooth-Target Tracking Drill">
+<meta name="twitter:description" content="Free tracking aim trainer in your browser. Keep your crosshair inside one target moving on a smooth randomised path; scored on the percentage of the session you stayed on it. No download, nothing uploaded.">
+
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/styles.css?v=6">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Tracking Aim Trainer",
+  "url": "https://flicktrainer.com/tracking-trainer/",
+  "applicationCategory": "Game",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Free browser-based tracking aim training drill: a single target moving on a smooth randomised path, scored as the percentage of the session the cursor spent inside it."
+}
+</script>
+
+<!--
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7560786263587509" crossorigin="anonymous"></script>
+-->
+</head>
+<body data-engine="tracking">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="flicktrainer.com home">
+      <span class="brand-mark"><span class="crosshair-mark">&#9678;</span>Flick<span class="accent-word">Trainer</span></span>
+      <span class="brand-tag">browser aim training</span>
+    </a>
+    <div class="header-actions">
+      <button id="status-chip" class="status-chip" type="button" title="View your rank, streak &amp; achievements">
+        <span class="chip-level" id="chip-level">LV 1</span>
+        <span class="chip-streak is-zero" id="chip-streak">&#128293;0</span>
+      </button>
+      <button id="sound-toggle" class="icon-btn" type="button" aria-label="Toggle sound effects" title="Toggle sound">&#128266;</button>
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark/light theme" title="Toggle theme">&#9680;</button>
+    </div>
+  </div>
+</header>
+
+<!-- nav:start -->
+<nav class="toolbar" aria-label="Tools">
+  <details class="tb-menu">
+    <summary class="tb-trigger" aria-label="All 8 drills &amp; guides">
+      <span class="tb-glyph" aria-hidden="true">&#9636;</span>
+      <span class="tb-label">All 8<span class="tb-label-long"> drills &amp; guides</span></span>
+    </summary>
+    <div class="tb-sheet is-flat">
+      <ul>
+        <li><a href="/">Flick Aim Trainer</a></li>
+        <li><a href="/gridshot/">Gridshot</a></li>
+        <li><a href="/tracking-trainer/" aria-current="page">Tracking Trainer</a></li>
+        <li><a href="/precision-trainer/">Precision Trainer</a></li>
+        <li><a href="/articles/what-is-a-good-reaction-time.html">What's a Good Reaction Time?</a></li>
+        <li><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. Tracking</a></li>
+        <li><a href="/articles/history-of-aim-trainers.html">History of Aim Trainers</a></li>
+        <li><a href="/articles/how-this-test-works.html">How This Test Works</a></li>
+      </ul>
+    </div>
+  </details>
+  <div class="tb-scrim"></div>
+  <ul class="tb-rail">
+    <li><a href="/">Flick</a></li>
+    <li><a href="/gridshot/">Gridshot</a></li>
+    <li><a href="/tracking-trainer/" aria-current="page">Tracking</a></li>
+    <li><a href="/precision-trainer/">Precision</a></li>
+    <li><a href="/articles/what-is-a-good-reaction-time.html">Reaction Time</a></li>
+    <li><a href="/articles/flick-vs-tracking-aim.html">Flick vs Track</a></li>
+    <li><a href="/articles/history-of-aim-trainers.html">History</a></li>
+    <li><a href="/articles/how-this-test-works.html">How It Works</a></li>
+  </ul>
+</nav>
+<!-- nav:end -->
+
+<main id="main">
+  <div class="cabinet">
+    <div class="marquee">
+      <div class="marquee-logo"><span class="mq-1">Flick</span><span class="mq-2">Track</span></div>
+      <div class="marquee-sub">Stay On Target &middot; flicktrainer.com</div>
+    </div>
+
+    <div class="challenge-banner" id="challenge-banner" hidden>
+      <span class="cb-kicker">Challenge</span>
+      <span class="cb-text" id="challenge-text"></span>
+    </div>
+
+    <!-- ===================== SETUP SCREEN ===================== -->
+    <section id="screen-setup" class="screen">
+      <div class="crt">
+        <div class="crt-screen">
+          <div class="range-attract" aria-hidden="true">
+            <div class="attract-title"><span class="at-1">Smooth</span><span class="at-2">Track</span></div>
+            <div class="attract-targets">
+              <span class="pix-target"></span>
+              <span class="pix-target pix-target--sm"></span>
+              <span class="pix-target"></span>
+            </div>
+            <div class="attract-blink blink">Insert Coin &mdash; Stay On Target</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck deck--setup">
+        <div class="deck-controls">
+          <div id="timed-options" class="deck-field">
+            <span class="deck-label">Duration</span>
+            <div class="segmented" role="group" aria-label="Duration" id="duration-select">
+              <button type="button" class="duration-opt" data-duration="15" aria-pressed="false">15s</button>
+              <button type="button" class="duration-opt" data-duration="30" aria-pressed="true">30s</button>
+              <button type="button" class="duration-opt" data-duration="60" aria-pressed="false">60s</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="deck-side">
+          <div class="player-card">
+            <div class="pc-title">Marksman Card</div>
+            <div class="best-row" id="best-row">
+              <div class="best-stat">
+                <span class="best-stat-label">Best On Target</span>
+                <span class="best-stat-val" id="best-primary-val">&mdash;</span>
+              </div>
+            </div>
+            <div class="pc-top">
+              <span class="pc-rank" id="xp-rank-label">Rookie</span>
+              <span class="pc-xp" id="xp-progress-label">0 / 100 XP</span>
+            </div>
+            <div class="pc-bar"><div class="pc-bar-fill" id="xp-bar-fill"></div></div>
+          </div>
+          <button type="button" id="start-btn" class="primary start-btn"><span class="start-text">Fire!</span></button>
+          <div class="coin-door" aria-hidden="true"><span class="coin-slot"></span>Insert Coin &middot; Free Play</div>
+        </div>
+      </div>
+
+      <section class="container-narrow" style="padding-top:0;">
+        <h2>How this drill is scored</h2>
+        <p>There is nothing to click. Keep your crosshair inside the moving target and you are scored on <strong>time on target</strong> &mdash; the share of the session it was inside, sampled every animation frame rather than on mouse events. 50&ndash;65% is solid on this target size and speed; past 75% means you are leading the target rather than chasing it.</p>
+      </section>
+    </section>
+
+    <!-- ===================== GAME SCREEN ===================== -->
+    <section id="screen-game" class="screen" hidden>
+      <div class="crt">
+        <div class="crt-screen crt-screen--range">
+          <div class="range-hud">
+            <div class="rh-stat"><span class="rh-label" id="hud-primary-label">Time</span><span class="rh-val" id="hud-primary-val">--</span></div>
+            <div class="rh-stat"><span class="rh-label">On Target</span><span class="rh-val" id="hud-ontarget">--</span></div>
+            <button type="button" id="quit-btn" class="icon-btn quit-btn">Quit</button>
+          </div>
+          <div class="game-area" id="game-area" tabindex="0"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== RESULTS SCREEN ===================== -->
+    <section id="screen-results" class="screen" hidden>
+      <div class="crt">
+        <div class="crt-screen">
+          <div class="stage-clear">
+            <div class="sc-banner">Stage Clear</div>
+            <div class="rating-badge" id="rating-badge">
+              <span class="rating-tier" id="rating-tier">&mdash;</span>
+              <span class="rating-label" id="rating-label">No data</span>
+            </div>
+            <p class="rating-compare" id="rating-compare"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck deck--results">
+        <div class="stats-grid">
+          <div class="stat-tile"><span class="stat-label">On Target</span><span class="stat-val" id="res-ontarget">&mdash;</span></div>
+          <div class="stat-tile"><span class="stat-label">Best On Target</span><span class="stat-val" id="res-best-primary">&mdash;</span></div>
+        </div>
+        <div class="new-best-flag" id="new-best-flag" hidden>New Record &mdash; Sharpshooter!</div>
+        <div class="challenge-verdict" id="challenge-verdict" hidden></div>
+        <div class="btn-row">
+          <button type="button" id="restart-btn" class="primary start-btn"><span class="start-text">Reload</span></button>
+          <button type="button" id="share-btn" class="icon-btn">Copy challenge link</button>
+          <button type="button" id="change-mode-btn" class="icon-btn">Change Mode</button>
+        </div>
+      </div>
+
+      <div class="panel history-panel">
+        <h2>Recent sessions</h2>
+        <div class="history-chart" id="history-chart" aria-hidden="true"></div>
+        <ol class="history-list" id="history-list"></ol>
+      </div>
+    </section>
+  </div>
+  <!-- /.cabinet -->
+
+  <nav class="drill-switch" aria-label="Drills and game presets">
+    <span class="drill-switch-label" id="ds-drills">Drills</span>
+    <ul aria-labelledby="ds-drills">
+      <li><a href="/">Flick</a></li>
+      <li><a href="/gridshot/">Gridshot</a></li>
+      <li><a href="/tracking-trainer/" aria-current="page">Tracking</a></li>
+      <li><a href="/precision-trainer/">Precision</a></li>
+    </ul>
+    <span class="drill-switch-label" id="ds-presets">Game presets</span>
+    <ul aria-labelledby="ds-presets">
+      <li><a href="/valorant-aim-trainer/">Valorant</a></li>
+      <li><a href="/csgo-aim-trainer/">CS:GO</a></li>
+      <li><a href="/fortnite-aim-trainer/">Fortnite</a></li>
+    </ul>
+  </nav>
+
+  <section class="achievements-panel" id="achievements-panel">
+    <h2>Achievements</h2>
+    <div class="achievements-grid" id="achievements-grid"></div>
+  </section>
+
+  <section class="container-narrow" style="padding-top:0;">
+  <h1>Tracking Trainer</h1>
+
+  <p>One target, moving continuously on a smooth path that never repeats. There is
+  nothing to click. Your score is the percentage of the session your crosshair spent
+  <em>inside</em> the target &mdash; <strong>time on target</strong> &mdash; sampled
+  continuously rather than at discrete moments. It is the only drill on this site with
+  no hits and no misses, because neither concept applies.</p>
+
+  <h2 id="different">Why this is a different skill</h2>
+  <p>Flicking and tracking are close to opposite motor problems. A flick is
+  <em>ballistic</em>: you plan a movement, execute it as one burst, and correct at the
+  end. Tracking is a <em>continuous feedback loop</em>: you are constantly comparing
+  where the crosshair is against where the target is and adjusting, dozens of times a
+  second, and the correction never stops. People who are excellent at one are routinely
+  mediocre at the other, and the reason is that they train opposite habits &mdash; a
+  flicker learns to commit to a movement, a tracker learns never to commit.</p>
+
+  <p>Which one matters depends on what you play. Weapons with a high rate of fire and
+  low per-shot damage reward tracking, because you have to keep the crosshair on a
+  moving body for the length of a burst. Weapons that kill in one or two shots reward
+  flicking, because there is one moment that counts and nothing after it. Most games
+  ask for both, and most players train only the second.</p>
+
+  <h2 id="path">How the path is generated</h2>
+  <p>The target's position is the sum of <strong>two sine waves per axis</strong>, at
+  frequencies that are not simple multiples of each other, with randomised phases each
+  session. That gives three properties that matter for a tracking drill.</p>
+
+  <p>It <strong>never repeats</strong> inside a session, so you cannot learn the pattern
+  and pre-aim it. It has <strong>no corners</strong> &mdash; the path is smooth
+  everywhere, so there is never a sudden direction change that turns the drill into a
+  reaction test rather than a tracking one. And it is a <strong>pure function of
+  time</strong>: the target's position depends only on how long the session has been
+  running, not on where it was last frame, so the path cannot drift, accumulate error,
+  or wander off the playfield. The two amplitudes sum to one, which is what
+  mathematically guarantees the target stays inside the box.</p>
+
+  <p>The target is drawn entirely with a CSS transform rather than by changing its
+  position properties, so the render loop never triggers layout. That is not a
+  micro-optimisation for its own sake: a layout pass inside the animation frame would
+  show up as jitter, and jitter in a tracking drill is indistinguishable from your own
+  hand shaking.</p>
+
+  <h2 id="sampling">How time on target is measured</h2>
+  <p>Your cursor position is read on every <code>pointermove</code> event, and the
+  inside/outside test runs on every animation frame. Each frame adds its own elapsed
+  time to the on-target total if the crosshair was inside the circle at that moment, and
+  the total is divided by the session length at the end. Frame gaps longer than 100ms
+  are clamped, so a browser tab that stalls cannot award or deny you a large block of
+  time in one go.</p>
+
+  <p>Sampling per frame rather than per mouse event matters. If you hold the mouse
+  perfectly still while the target moves over your crosshair, no pointer event fires at
+  all &mdash; an event-driven measurement would score that as nothing happening, when in
+  fact you were on target the whole time. Conversely a fast mouse fires far more events
+  than there are frames, and counting those would weight rapid movement more heavily
+  than slow movement for no reason.</p>
+
+  <h2 id="reading">Reading your percentage</h2>
+  <p>Around 50 to 65 percent is solid smooth tracking on this drill's target size and
+  speed. Past 75 percent means you are <em>leading</em> the target &mdash; predicting
+  where it is going and putting the crosshair there &mdash; rather than chasing it,
+  which is the actual skill and the thing that separates good tracking from fast
+  reactions. Below about 40 percent, the usual cause is not reflexes but sensitivity.</p>
+
+  <p>That is the single most useful thing this drill will tell you. If you are
+  constantly overshooting and sawing back and forth across the target, your sensitivity
+  is too high for the movement. If you run out of mousepad or your arm lags behind on
+  the faster sweeps, it is too low. Tracking exposes a sensitivity mismatch far more
+  clearly than flicking does, because flicking lets you correct at the end of every
+  movement and tracking gives you nowhere to hide.</p>
+
+  <h2>Frequently asked questions</h2>
+  <div class="faq-item">
+    <h3>Do I need to click anything?</h3>
+    <p>No. There is nothing to click and clicking does nothing &mdash; the drill only measures where your crosshair is. Just move the mouse and keep the crosshair inside the moving circle for as much of the session as you can.</p>
+  </div>
+  <div class="faq-item">
+    <h3>What is a good time-on-target percentage?</h3>
+    <p>On this drill's target size and speed, 50&ndash;65% is solid and past 75% means you are leading the target rather than chasing it. Those are this page's own difficulty bands, not a population statistic: a bigger target or a slower path would move them immediately.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Why does my score jump around between runs?</h3>
+    <p>The path's phases are randomised every session, so one run may happen to sweep mostly across your comfortable arc and another mostly against it. Take the trend over several runs rather than any single number, and prefer the sixty-second option &mdash; it averages out far more of that variation.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Should I use a different sensitivity for tracking?</h3>
+    <p>Most people find they want slightly lower sensitivity for tracking than for flicking, and having to choose is exactly why this drill is useful. Rather than switching between two settings, use the score to find one you can both flick and track at &mdash; that is the setting that will hold up in a game.</p>
+  </div>
+
+  <h2>Keep training</h2>
+  <div class="faq-item">
+    <h3><a href="/gridshot/">Gridshot</a></h3>
+    <p>The opposite motor problem: ballistic movement between nine known positions, scored as a rate.</p>
+  </div>
+  <div class="faq-item">
+    <h3><a href="/precision-trainer/">Precision Trainer</a></h3>
+    <p>Small static targets and no time pressure &mdash; the other drill that exposes a sensitivity mismatch.</p>
+  </div>
+  <div class="faq-item">
+    <h3><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. Tracking</a></h3>
+    <p>Why they are different skills, and which one your game actually asks for.</p>
+  </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="unlock-stack" id="unlock-stack" aria-live="polite"></div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>&copy; <span id="year"></span> flicktrainer.com</div>
+    <div class="footer-links">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js?v=6"></script>
+<script src="/assets/js/nav.js?v=6"></script>
+<a href="https://erabb.it" class="erabbit-mark" aria-label="erabb.it"><img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128007;</text></svg>" width="10" height="10" alt=""></a>
+</body>
+</html>
