@@ -7,10 +7,75 @@ zero-dependency site: vanilla HTML/CSS/JS, no build step, GitHub Pages
 (`CNAME` → flicktrainer.com, Cloudflare DNS). Everything runs client-side;
 nothing is uploaded.
 
+## Four drills and three game presets — `data-engine` / `data-preset` on `<body>`
+
+One engine file, seven playable pages. `document.body.dataset.engine` picks the
+drill and `data-preset` optionally retunes the flick spawner; both absent is the
+original trainer at `/`, so index.html behaves exactly as it did.
+
+| `data-engine` | page | spawner | headline number |
+|---|---|---|---|
+| (none) / `flick` | `/` | one shrinking target, random position | avg time-to-click (ms) |
+| `gridshot` | `/gridshot/` | fixed 3×3, three live, no expiry | targets/second |
+| `tracking` | `/tracking-trainer/` | one target on a smooth path | % time on target |
+| `precision` | `/precision-trainer/` | one small static target, long life | accuracy % |
+
+| `data-preset` | page | start / end / life |
+|---|---|---|
+| `valorant` | `/valorant-aim-trainer/` | 44px → 30px, 1100ms |
+| `csgo` | `/csgo-aim-trainer/` | 52px → 38px, 1500ms |
+| `fortnite` | `/fortnite-aim-trainer/` | 68px → 44px, 900ms |
+
+`ENGINE_CONFIG` and `PRESETS` at the top of the IIFE own every difference. Things
+that follow from that and must not be undone:
+
+- **`ENGINE_RATINGS` keys each drill's ladder to the number it actually
+  reports.** Only flick is read downwards (`lowerIsBetter`); a drill scored on a
+  rate or a percentage must never inherit "lower is better".
+- **Gridshot and tracking ship no mode selector.** Both are scored over a session
+  length, so "30 targets" is not a run they can do — and `endSession` is only
+  reachable from the timed clock for those spawners, so a count-mode gridshot
+  would never end. Duration options only. `#count-options` may only ship where a
+  `.mode-opt` exists, because the mode handler writes to it unguarded.
+- **Tracking registers no hits and no misses**, so its accuracy is 0/0. Never
+  print it — a fabricated zero is worse than an omitted tile. Its HUD and results
+  show time-on-target and nothing else.
+- **Gridshot targets never expire**, so a miss there is only ever a shot that
+  landed on empty space, and its accuracy means shot discipline rather than
+  keeping up with a spawn timer.
+- **Per-drill history keys** (see localStorage below). One shared 10-entry list
+  meant a gridshot run evicted the tracking run before it.
+- The progression layer (XP, streak, achievements) is deliberately **shared**
+  across all seven pages: it is one marksman card, not one per drill. Bear in
+  mind some thresholds were tuned for flick and are easier on gridshot.
+
+## The drill and preset pages are GENERATED
+
+`tools/build_drills.py` renders all twelve files (six clean paths + six
+byte-identical flat aliases). **Edit that script, never the HTML it writes** —
+`node --test test/scoring.test.js` runs `--check` and fails on a hand-edit.
+
+```
+python3 tools/build_drills.py && python3 tools/sync_nav.py
+```
+
+Order-independent and idempotent: `build_drills.py` carries whatever sync_nav has
+put between the nav markers straight across. `index.html` is NOT generated; it is
+the one page whose markup is not a variation on anything.
+
+The canonical on every generated page is the **directory** form, and that is
+load-bearing rather than cosmetic: `app.js` reads the challenge-link base off
+`link[rel=canonical]`, so a flat canonical would mint `…/gridshot.html?ms=` links.
+
 ## Files
 
 - `index.html` — the whole game UI (the cabinet) + About/FAQ + article list.
   Articles in `articles/`. `privacy.html` / `terms.html` / `404.html` too.
+- `gridshot/`, `tracking-trainer/`, `precision-trainer/`,
+  `valorant-aim-trainer/`, `csgo-aim-trainer/`, `fortnite-aim-trainer/` plus
+  their flat `.html` aliases — **output of `tools/build_drills.py`**.
+- `test/scoring.test.js` — `node --test test/scoring.test.js`. No package.json,
+  no dependencies.
 - `assets/js/app.js` — **pure, DOM-free stats/rating helpers up top**
   (`calcAccuracy`, `calcAverageReactionTime`, `calcThroughput`,
   `targetSizeAtElapsed`, `randomTargetPosition`, `getRatingTier`,
@@ -111,7 +176,12 @@ They read from, but never write to, `session.hits` / `session.reactionTimes` /
   `hud-hits/-misses/-accuracy`, `rating-tier/-label`, `rating-compare`,
   `res-hits/-misses/-accuracy/-avgtime/-throughput/-best-avgtime`,
   `new-best-flag`, `history-chart` / `history-list`. The arcade skin only
-  restyles/rewraps these — it doesn't rename them.
+  restyles/rewraps these — it doesn't rename them. The drills add three more,
+  all optional and all `if (el)`-guarded: `hud-ontarget`, `res-ontarget`,
+  `res-best-primary` / `best-primary-val`.
+  **Which of these are actually required is asserted in `test/scoring.test.js`** —
+  a page missing an unguarded one throws on load and the drill is simply dead,
+  which is not visible from reading the page.
 - **Do not duplicate input handlers.** The target has its own `pointerdown`
   listener and `.game-area` has one empty-space `pointerdown` listener — keep
   pointer handling as-is. **`pointerdown`, never `click`:** it fires on press
@@ -122,7 +192,7 @@ They read from, but never write to, `session.hits` / `session.reactionTimes` /
   (index, 404, privacy, terms, articles/*), and `nav.js?v=` alongside them.
   **Bump the `?v=` on any coupled
   HTML+CSS/JS change** or cached visitors get new HTML with stale CSS = a broken
-  raw page. Currently `?v=5`.
+  raw page. Currently `?v=6`.
 - **Ads: AdSense Auto ads only.** Single commented `<script>` in `<head>`
   (client `ca-pub-7560786263587509`). **NEVER add `.ad-slot` divs** or manual
   units.
@@ -189,10 +259,18 @@ sibling of the three `.screen` sections), and renders `#challenge-verdict`
 
 ## localStorage keys
 
-`ft-theme` (light/dark), `flicktrainer:best:<mode>:<variant>` (per-mode best
-accuracy + avg time), `flicktrainer:history` (last 10 sessions),
-`flicktrainer:profile` (XP / sessions / streak / unlocked achievements),
-`flicktrainer:sound-muted`.
+`ft-theme` (light/dark), `flicktrainer:profile` (XP / sessions / streak /
+unlocked achievements — shared across every drill), `flicktrainer:sound-muted`.
+
+Scoped per drill, so a targets-per-second run can never be compared against a
+millisecond one:
+
+- `flicktrainer:best:<scope><mode>:<variant>` where `<scope>` is `""` for the
+  original flick drill, `<preset>:` on a preset page, else `<engine>:`. A preset
+  wins over the engine, because a preset page's numbers really are its own.
+- `flicktrainer:history` for flick and its presets — the legacy unscoped key, so
+  nobody loses the sessions they already have — and `flicktrainer:history:<engine>`
+  for each of the other drills.
 
 ## Shipping
 

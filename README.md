@@ -24,24 +24,70 @@ Then open `http://localhost:8000`.
 ## Structure
 
 ```
-index.html            Main app (setup / game / results screens)
+index.html            Main app, the flick drill (setup / game / results screens)
+gridshot/index.html    The three tier-1 drills, at their clean paths...
+tracking-trainer/index.html
+precision-trainer/index.html
+valorant-aim-trainer/index.html   ...and the three tier-2 game presets.
+csgo-aim-trainer/index.html
+fortnite-aim-trainer/index.html
+gridshot.html          Flat aliases of all six, byte-identical to the above.
+tracking-trainer.html  All twelve are OUTPUT of tools/build_drills.py.
+precision-trainer.html
+valorant-aim-trainer.html
+csgo-aim-trainer.html
+fortnite-aim-trainer.html
 articles/              Original written content (AdSense content-depth round)
 privacy.html           Privacy policy (required for ad networks)
 terms.html             Terms of use
 404.html               Custom not-found page
 assets/css/styles.css  Design system
 assets/js/app.js       Pure scoring/spawn logic + game/DOM wiring
+tools/nav_data.py      The nav's single source of truth
+tools/sync_nav.py      Renders the toolbar into every .html between markers
+tools/build_drills.py  Renders the drill + preset pages from one shared shell
+test/scoring.test.js   node:test coverage for the scoring and the built pages
 CNAME                   GitHub Pages custom domain (flicktrainer.com)
 ```
+
+The trainer runs **four drills** off one engine, selected by `data-engine` on
+`<body>`, each reporting a different unit: flick (average time-to-click),
+gridshot (targets per second), tracking (percent of the session on target) and
+precision (accuracy). Three further pages are the flick drill retuned per game
+via `data-preset`, with their target size and lifespan stated on the page.
 
 `articles/` holds four original written pieces (reaction-time benchmarks, flicking vs. tracking technique, aim-trainer history, and how this test's scoring works) linked from the homepage's &ldquo;Learn more&rdquo; section and `sitemap.xml`, added to demonstrate genuine content depth beyond the single tool page for AdSense review.
 
 The scoring and game-timing math (accuracy, average reaction time, throughput,
 rating-tier lookup, target spawn positioning, shrink-over-time sizing, best-record
-updates) lives in dependency-free functions at the top of `assets/js/app.js`,
-exported via `module.exports` when `typeof module !== "undefined"` so they can be
-sanity-checked from Node before each commit without needing a browser or test
-framework installed.
+updates, and the drill engines' grid geometry, tracking path and per-engine rating
+ladders) lives in dependency-free functions at the top of `assets/js/app.js`,
+exported via `module.exports` when `typeof module !== "undefined"`.
+
+## Tests
+
+```
+node --test test/scoring.test.js
+```
+
+No `package.json` and no dependencies — `node:test` and `node:assert` only. It
+covers the pure helpers (a tracking target that can never leave the playfield at
+any moment, a grid whose cells never collide, ladders that are monotone in the
+right direction for each drill's own unit) and the twelve generated pages (pairs
+byte-identical, one ad tag, mark last in body, no external requests, every
+element the engine reads unguarded, sitemap entry present, unique title and
+canonical).
+
+The drill and preset pages are generated. Regenerate and re-sync the nav after
+editing `tools/build_drills.py`:
+
+```
+python3 tools/build_drills.py && python3 tools/sync_nav.py
+python3 tools/build_drills.py --check && python3 tools/sync_nav.py --check
+```
+
+Both scripts are order-independent and idempotent, and both `--check` modes run
+inside the node suite.
 
 ## Enabling ads (Google AdSense)
 

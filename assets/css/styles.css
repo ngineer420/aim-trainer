@@ -179,6 +179,18 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
   .container-narrow { padding-top: 22px; }
 }
 
+/* A stated-fact box: the drill pages use it to print their own tuning, which
+   has to be legible as a specification rather than as more prose. Hard edges
+   and a flat fill, per the pixel-art discipline — no radius, no gradient. */
+.callout {
+  margin: 18px 0;
+  padding: 14px 16px;
+  background: var(--bg-inset);
+  border-left: 4px solid var(--accent);
+  color: var(--text-dim);
+}
+.callout strong { color: var(--text); }
+
 .faq-item { margin-bottom: 18px; }
 .faq-item h3 { font-size: 15px; margin: 0 0 6px; }
 .faq-item p { margin: 0; color: var(--text-dim); }
@@ -915,6 +927,51 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
 .target { cursor: inherit; padding: 0; border: none; transition: width .06s linear, height .06s linear, opacity .1s ease; }
 .target:hover { filter: brightness(1.08); }
 .target.hit { animation: target-hit .16s steps(3) forwards; }
+
+/* ---- tracking drill: one target on a smooth path ----
+   Positioned entirely by transform so the render loop never touches layout,
+   and pointer-transparent so the cursor sampling underneath it is unbroken. */
+.target--track {
+  left: 0; top: 0;
+  pointer-events: none;
+  transition: none;
+  will-change: transform;
+}
+.target--track.is-on {
+  box-shadow:
+    inset 0 0 0 4px #fff,
+    inset 0 0 0 9px var(--pa-green),
+    inset 0 0 0 13px #fff,
+    0 0 0 3px #000,
+    0 0 0 6px var(--pa-green);
+}
+
+/* ---- the drill switcher, under the cabinet ---- */
+/* Outside .cabinet, so the pixel palette is re-declared rather than inherited. */
+.drill-switch {
+  --pa: #ff6a1f;
+  --pa-bezel: #4a2a1e;
+  max-width: 860px; margin: 14px auto 0;
+  display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap;
+  padding: 12px 14px;
+  background: #1a0d09;
+  box-shadow: 0 0 0 4px #000, inset 0 0 0 2px var(--pa-bezel);
+}
+.drill-switch-label {
+  font-family: "PixArc", var(--mono); font-size: 7px; letter-spacing: 0;
+  text-transform: uppercase; color: #c89a86;
+}
+.drill-switch ul { display: flex; gap: 8px; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+.drill-switch a {
+  display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px;
+  font-size: 11px; text-decoration: none; color: #f0cdbd;
+  background: #120604; box-shadow: 0 0 0 2px #000, inset 0 0 0 2px var(--pa-bezel);
+}
+.drill-switch a:hover { color: var(--pa); text-decoration: none; }
+.drill-switch a[aria-current] {
+  color: #200a04; background: var(--pa);
+  box-shadow: 0 0 0 2px #000, inset 0 0 0 2px #fff;
+}
 
 /* pixel hit-spark burst */
 .hit-spark {

@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gridshot Aim Trainer - Free 3x3 Grid Drill, No Download</title>
+<meta name="description" content="Free gridshot trainer in your browser. Nine fixed positions, three targets live at once, scored in targets per second over 15, 30 or 60 seconds. No download, no sign-up, nothing uploaded.">
+<link rel="canonical" href="https://flicktrainer.com/gridshot/">
+<meta name="theme-color" content="#1a0808">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Gridshot Aim Trainer - Free 3x3 Grid Drill, No Download">
+<meta property="og:description" content="Free gridshot trainer in your browser. Nine fixed positions, three targets live at once, scored in targets per second over 15, 30 or 60 seconds. No download, no sign-up, nothing uploaded.">
+<meta property="og:url" content="https://flicktrainer.com/gridshot/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Gridshot Aim Trainer - Free 3x3 Grid Drill, No Download">
+<meta name="twitter:description" content="Free gridshot trainer in your browser. Nine fixed positions, three targets live at once, scored in targets per second over 15, 30 or 60 seconds. No download, no sign-up, nothing uploaded.">
+
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/styles.css?v=6">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Gridshot Aim Trainer",
+  "url": "https://flicktrainer.com/gridshot/",
+  "applicationCategory": "Game",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Free browser-based gridshot aim training drill: a fixed 3x3 grid with three targets live simultaneously, scored in targets cleared per second."
+}
+</script>
+
+<!--
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7560786263587509" crossorigin="anonymous"></script>
+-->
+</head>
+<body data-engine="gridshot">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="flicktrainer.com home">
+      <span class="brand-mark"><span class="crosshair-mark">&#9678;</span>Flick<span class="accent-word">Trainer</span></span>
+      <span class="brand-tag">browser aim training</span>
+    </a>
+    <div class="header-actions">
+      <button id="status-chip" class="status-chip" type="button" title="View your rank, streak &amp; achievements">
+        <span class="chip-level" id="chip-level">LV 1</span>
+        <span class="chip-streak is-zero" id="chip-streak">&#128293;0</span>
+      </button>
+      <button id="sound-toggle" class="icon-btn" type="button" aria-label="Toggle sound effects" title="Toggle sound">&#128266;</button>
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark/light theme" title="Toggle theme">&#9680;</button>
+    </div>
+  </div>
+</header>
+
+<!-- nav:start -->
+<nav class="toolbar" aria-label="Tools">
+  <details class="tb-menu">
+    <summary class="tb-trigger" aria-label="All 8 drills &amp; guides">
+      <span class="tb-glyph" aria-hidden="true">&#9636;</span>
+      <span class="tb-label">All 8<span class="tb-label-long"> drills &amp; guides</span></span>
+    </summary>
+    <div class="tb-sheet is-flat">
+      <ul>
+        <li><a href="/">Flick Aim Trainer</a></li>
+        <li><a href="/gridshot/" aria-current="page">Gridshot</a></li>
+        <li><a href="/tracking-trainer/">Tracking Trainer</a></li>
+        <li><a href="/precision-trainer/">Precision Trainer</a></li>
+        <li><a href="/articles/what-is-a-good-reaction-time.html">What's a Good Reaction Time?</a></li>
+        <li><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. Tracking</a></li>
+        <li><a href="/articles/history-of-aim-trainers.html">History of Aim Trainers</a></li>
+        <li><a href="/articles/how-this-test-works.html">How This Test Works</a></li>
+      </ul>
+    </div>
+  </details>
+  <div class="tb-scrim"></div>
+  <ul class="tb-rail">
+    <li><a href="/">Flick</a></li>
+    <li><a href="/gridshot/" aria-current="page">Gridshot</a></li>
+    <li><a href="/tracking-trainer/">Tracking</a></li>
+    <li><a href="/precision-trainer/">Precision</a></li>
+    <li><a href="/articles/what-is-a-good-reaction-time.html">Reaction Time</a></li>
+    <li><a href="/articles/flick-vs-tracking-aim.html">Flick vs Track</a></li>
+    <li><a href="/articles/history-of-aim-trainers.html">History</a></li>
+    <li><a href="/articles/how-this-test-works.html">How It Works</a></li>
+  </ul>
+</nav>
+<!-- nav:end -->
+
+<main id="main">
+  <div class="cabinet">
+    <div class="marquee">
+      <div class="marquee-logo"><span class="mq-1">Flick</span><span class="mq-2">Grid</span></div>
+      <div class="marquee-sub">Nine Cells &middot; Three Live &middot; flicktrainer.com</div>
+    </div>
+
+    <div class="challenge-banner" id="challenge-banner" hidden>
+      <span class="cb-kicker">Challenge</span>
+      <span class="cb-text" id="challenge-text"></span>
+    </div>
+
+    <!-- ===================== SETUP SCREEN ===================== -->
+    <section id="screen-setup" class="screen">
+      <div class="crt">
+        <div class="crt-screen">
+          <div class="range-attract" aria-hidden="true">
+            <div class="attract-title"><span class="at-1">Grid</span><span class="at-2">Shot</span></div>
+            <div class="attract-targets">
+              <span class="pix-target"></span>
+              <span class="pix-target pix-target--sm"></span>
+              <span class="pix-target"></span>
+            </div>
+            <div class="attract-blink blink">Insert Coin &mdash; Nine Cells</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck deck--setup">
+        <div class="deck-controls">
+          <div id="timed-options" class="deck-field">
+            <span class="deck-label">Duration</span>
+            <div class="segmented" role="group" aria-label="Duration" id="duration-select">
+              <button type="button" class="duration-opt" data-duration="15" aria-pressed="false">15s</button>
+              <button type="button" class="duration-opt" data-duration="30" aria-pressed="true">30s</button>
+              <button type="button" class="duration-opt" data-duration="60" aria-pressed="false">60s</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="deck-side">
+          <div class="player-card">
+            <div class="pc-title">Marksman Card</div>
+            <div class="best-row" id="best-row">
+              <div class="best-stat">
+                <span class="best-stat-label">Best Rate</span>
+                <span class="best-stat-val" id="best-primary-val">&mdash;</span>
+              </div>
+              <div class="best-stat">
+                <span class="best-stat-label">Best Acc</span>
+                <span class="best-stat-val" id="best-accuracy-val">&mdash;</span>
+              </div>
+            </div>
+            <div class="pc-top">
+              <span class="pc-rank" id="xp-rank-label">Rookie</span>
+              <span class="pc-xp" id="xp-progress-label">0 / 100 XP</span>
+            </div>
+            <div class="pc-bar"><div class="pc-bar-fill" id="xp-bar-fill"></div></div>
+          </div>
+          <button type="button" id="start-btn" class="primary start-btn"><span class="start-text">Fire!</span></button>
+          <div class="coin-door" aria-hidden="true"><span class="coin-slot"></span>Insert Coin &middot; Free Play</div>
+        </div>
+      </div>
+
+      <section class="container-narrow" style="padding-top:0;">
+        <h2>How this drill is scored</h2>
+        <p>Your score is <strong>targets per second</strong>: hits divided by session length. Steady grid shooting on this configuration sits around 1.2&ndash;1.5/s, and past 1.8/s you are flicking straight to the next target rather than hunting for it. Targets never expire here, so a miss is only ever a shot that landed on empty space.</p>
+      </section>
+    </section>
+
+    <!-- ===================== GAME SCREEN ===================== -->
+    <section id="screen-game" class="screen" hidden>
+      <div class="crt">
+        <div class="crt-screen crt-screen--range">
+          <div class="range-hud">
+            <div class="rh-stat"><span class="rh-label" id="hud-primary-label">Time</span><span class="rh-val" id="hud-primary-val">--</span></div>
+            <div class="rh-stat"><span class="rh-label">Hits</span><span class="rh-val" id="hud-hits">0</span></div>
+            <div class="rh-stat"><span class="rh-label">Miss</span><span class="rh-val" id="hud-misses">0</span></div>
+            <div class="rh-stat"><span class="rh-label">Acc</span><span class="rh-val" id="hud-accuracy">--</span></div>
+            <div class="rh-stat rh-combo" id="combo-wrap"><span class="rh-label">Combo</span><span class="rh-val" id="hud-combo">0</span></div>
+            <button type="button" id="quit-btn" class="icon-btn quit-btn">Quit</button>
+          </div>
+          <div class="game-area" id="game-area" tabindex="0"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== RESULTS SCREEN ===================== -->
+    <section id="screen-results" class="screen" hidden>
+      <div class="crt">
+        <div class="crt-screen">
+          <div class="stage-clear">
+            <div class="sc-banner">Stage Clear</div>
+            <div class="rating-badge" id="rating-badge">
+              <span class="rating-tier" id="rating-tier">&mdash;</span>
+              <span class="rating-label" id="rating-label">No data</span>
+            </div>
+            <p class="rating-compare" id="rating-compare"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="deck deck--results">
+        <div class="stats-grid">
+          <div class="stat-tile"><span class="stat-label">Hits</span><span class="stat-val" id="res-hits">0</span></div>
+          <div class="stat-tile"><span class="stat-label">Misses</span><span class="stat-val" id="res-misses">0</span></div>
+          <div class="stat-tile"><span class="stat-label">Accuracy</span><span class="stat-val" id="res-accuracy">0%</span></div>
+          <div class="stat-tile"><span class="stat-label">Avg Time</span><span class="stat-val" id="res-avgtime">&mdash;</span></div>
+          <div class="stat-tile"><span class="stat-label">Throughput</span><span class="stat-val" id="res-throughput">0/s</span></div>
+          <div class="stat-tile"><span class="stat-label">Best Rate</span><span class="stat-val" id="res-best-primary">&mdash;</span></div>
+        </div>
+        <div class="new-best-flag" id="new-best-flag" hidden>New Record &mdash; Sharpshooter!</div>
+        <div class="challenge-verdict" id="challenge-verdict" hidden></div>
+        <div class="btn-row">
+          <button type="button" id="restart-btn" class="primary start-btn"><span class="start-text">Reload</span></button>
+          <button type="button" id="share-btn" class="icon-btn">Copy challenge link</button>
+          <button type="button" id="change-mode-btn" class="icon-btn">Change Mode</button>
+        </div>
+      </div>
+
+      <div class="panel history-panel">
+        <h2>Recent sessions</h2>
+        <div class="history-chart" id="history-chart" aria-hidden="true"></div>
+        <ol class="history-list" id="history-list"></ol>
+      </div>
+    </section>
+  </div>
+  <!-- /.cabinet -->
+
+  <nav class="drill-switch" aria-label="Drills and game presets">
+    <span class="drill-switch-label" id="ds-drills">Drills</span>
+    <ul aria-labelledby="ds-drills">
+      <li><a href="/">Flick</a></li>
+      <li><a href="/gridshot/" aria-current="page">Gridshot</a></li>
+      <li><a href="/tracking-trainer/">Tracking</a></li>
+      <li><a href="/precision-trainer/">Precision</a></li>
+    </ul>
+    <span class="drill-switch-label" id="ds-presets">Game presets</span>
+    <ul aria-labelledby="ds-presets">
+      <li><a href="/valorant-aim-trainer/">Valorant</a></li>
+      <li><a href="/csgo-aim-trainer/">CS:GO</a></li>
+      <li><a href="/fortnite-aim-trainer/">Fortnite</a></li>
+    </ul>
+  </nav>
+
+  <section class="achievements-panel" id="achievements-panel">
+    <h2>Achievements</h2>
+    <div class="achievements-grid" id="achievements-grid"></div>
+  </section>
+
+  <section class="container-narrow" style="padding-top:0;">
+  <h1>Gridshot</h1>
+
+  <p>Nine fixed positions in a three-by-three grid. Three targets are alive at any
+  moment; clear one and another appears in a cell that is currently empty. Your score
+  is <strong>targets per second</strong> over the session, which is a different number
+  from the millisecond average the <a href="/">flick drill</a> gives you and measures a
+  different thing.</p>
+
+  <h2 id="why-grid">Why the grid is fixed</h2>
+  <p>The whole point of gridshot is that you always know where a target can be. There
+  are nine possible positions and you have seen all of them within about two seconds of
+  starting, so the drill stops testing <em>visual search</em> — hunting the screen for
+  something that appeared somewhere unpredictable — and starts testing the thing it is
+  named for: how fast you can move the crosshair between two known points and stop it
+  there.</p>
+
+  <p>That distinction matters more than it sounds. In a random-spawn drill a large part
+  of your reaction time is finding the target, and finding is a perceptual skill that
+  improves on a different curve from aiming. Separating them is why gridshot became the
+  standard warm-up routine rather than one of a dozen interchangeable modes: it
+  isolates the motor half. If your gridshot rate is good but your flick average is
+  poor, your arm is fine and your eyes are doing the work slowly. If it is the other
+  way round, you find things quickly and then wobble on the way there.</p>
+
+  <h2 id="live-targets">Three at once, and nothing expires</h2>
+  <p>Two rules make this drill continuous rather than turn-based. First, three targets
+  are live simultaneously, so there is always somewhere to go next and the crosshair
+  never idles waiting for a spawn. Second, <strong>targets never time out</strong>. In
+  the flick drill a target you ignore for long enough disappears and counts as a miss;
+  here it simply waits. A miss is only ever a shot that landed on empty space.</p>
+
+  <p>That is deliberate, and it changes what your accuracy figure means. On this drill
+  accuracy is <em>shot discipline</em> — the share of your clicks that landed on
+  something — rather than a measure of whether you kept up with the spawn rate. Keeping
+  up is what targets per second measures, and separating the two numbers is more useful
+  than folding them together. You can be fast and sloppy, or slow and clean, and the
+  results screen will tell you which.</p>
+
+  <p>When a target is cleared, its replacement is chosen from the cells that are empty
+  <em>at that moment</em>, with the just-cleared cell still counted as occupied. So a
+  target can never respawn where you have just clicked. Without that rule the optimal
+  strategy would be to sit on one cell and click as fast as you can, which measures your
+  mouse button rather than your aim.</p>
+
+  <h2 id="targets-per-second">Reading targets per second</h2>
+  <p>Targets per second is hits divided by session length. It is a rate, not a latency,
+  and it rewards a completely different thing from a millisecond average: consistency.
+  One brilliant flick does nothing to a thirty-second rate, and one moment of hesitation
+  costs you the same as one slow flick. That makes it a much steadier number
+  session-to-session than a reaction time average, which is why it is worth tracking as
+  a progress metric.</p>
+
+  <p>As a rough calibration on this drill's target size and spacing: steady grid
+  shooting sits around 1.2 to 1.5 targets per second, and past 1.8 you are flicking
+  straight to the next target rather than hunting for it. Those are the drill's own
+  rating bands and nothing more — a difficulty curve tuned to how this page is
+  configured, not a measurement of any population. Target size, grid spacing and screen
+  size all move the number, so compare your rate to your own rate on the same machine
+  rather than to anyone else's.</p>
+
+  <h2 id="training">How to actually train with it</h2>
+  <p>Gridshot is a warm-up before it is a workout. Two or three thirty-second runs at
+  the start of a session get your hand calibrated to your sensitivity, which is most of
+  what a warm-up is for. Beyond that, the useful discipline is to run it at a rate you
+  can hold cleanly rather than the fastest rate you can survive: overshooting and
+  correcting builds the habit of overshooting, and that habit follows you into the game.
+  Watch the accuracy number, and back off the pace until it stops falling.</p>
+
+  <p>Sixty-second runs are the honest test. Fifteen seconds rewards a burst; a minute
+  exposes whether your form holds when your forearm gets tired, which is much closer to
+  what a real match asks of it. If your rate over sixty seconds is well below your rate
+  over fifteen, the thing to train is endurance and grip, not speed.</p>
+
+  <h2>Frequently asked questions</h2>
+  <div class="faq-item">
+    <h3>What is a good gridshot score?</h3>
+    <p>On this drill's configuration, around 1.2&ndash;1.5 targets per second is steady, and past 1.8 is quick. Treat those as this page's own difficulty bands rather than a population statistic &mdash; target size, spacing, screen size and mouse polling rate all move the number, so the only comparison that means anything is against your own previous runs on the same setup.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Why do targets not disappear on their own?</h3>
+    <p>Because gridshot measures how fast you can clear targets, not whether you can keep up with a spawn timer. With no expiry, a miss is only ever a shot that landed on empty space, which makes the accuracy figure a clean measure of shot discipline instead of a mix of two things.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Is gridshot better than random-spawn flicking?</h3>
+    <p>It is not better, it is narrower. Fixed positions remove visual search and isolate the movement, which is what makes it a good warm-up and a good progress metric. Random spawns are closer to a real game, where you do have to find things. Running both and comparing them tells you which half is holding you back.</p>
+  </div>
+  <div class="faq-item">
+    <h3>Does it work on a trackpad or a phone?</h3>
+    <p>It runs, and the drill is the same, but the numbers are not comparable to a mouse. A trackpad cannot flick, and a touchscreen removes the movement entirely &mdash; you are tapping locations, not aiming at them. Compare like with like.</p>
+  </div>
+
+  <h2>Keep training</h2>
+  <div class="faq-item">
+    <h3><a href="/tracking-trainer/">Tracking Trainer</a></h3>
+    <p>The opposite motor problem: one target on a smooth path, scored on time on target rather than a rate.</p>
+  </div>
+  <div class="faq-item">
+    <h3><a href="/precision-trainer/">Precision Trainer</a></h3>
+    <p>Small static targets and no time pressure &mdash; the drill that shows you your micro-adjustment.</p>
+  </div>
+  <div class="faq-item">
+    <h3><a href="/">Flick Trainer</a></h3>
+    <p>Random spawns and shrinking targets, scored on average time-to-click. Visual search included.</p>
+  </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="unlock-stack" id="unlock-stack" aria-live="polite"></div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>&copy; <span id="year"></span> flicktrainer.com</div>
+    <div class="footer-links">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/js/app.js?v=6"></script>
+<script src="/assets/js/nav.js?v=6"></script>
+<a href="https://erabb.it" class="erabbit-mark" aria-label="erabb.it"><img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128007;</text></svg>" width="10" height="10" alt=""></a>
+</body>
+</html>
