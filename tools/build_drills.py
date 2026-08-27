@@ -897,6 +897,9 @@ TEMPLATE = """<!doctype html>
 <meta property="og:title" content="%(title)s">
 <meta property="og:description" content="%(description)s">
 <meta property="og:url" content="%(url)s">
+<meta property="og:image" content="https://flicktrainer.com/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="%(title)s">
 <meta name="twitter:description" content="%(description)s">
