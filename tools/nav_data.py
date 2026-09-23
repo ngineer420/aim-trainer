@@ -51,7 +51,7 @@ TOOLS = [
     {"href": "/precision-trainer/",   "label": "Precision", "long": "Precision Trainer",      "group": "drills", "tier": 1},
     # Then the guides, in traffic order (the same order the homepage's own
     # "Learn more" card grid uses).
-    {"href": "/articles/what-is-a-good-reaction-time.html", "label": "Reaction Time",  "long": "What's a Good Reaction Time?", "group": "guides", "tier": 1},
+    {"href": "/articles/what-is-a-good-reaction-time.html", "label": "Time-to-Click",  "long": "What Is a Good Time-to-Click?", "group": "guides", "tier": 1},
     {"href": "/articles/flick-vs-tracking-aim.html",        "label": "Flick vs Track", "long": "Flicking vs. Tracking",        "group": "guides", "tier": 1},
     {"href": "/articles/history-of-aim-trainers.html",      "label": "History",        "long": "History of Aim Trainers",      "group": "guides", "tier": 1},
     {"href": "/articles/how-this-test-works.html",          "label": "How It Works",   "long": "How This Test Works",          "group": "guides", "tier": 1},

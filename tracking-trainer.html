@@ -20,7 +20,7 @@
 <meta name="twitter:description" content="Free tracking aim trainer in your browser. Keep your crosshair inside one target moving on a smooth randomised path; scored on the percentage of the session you stayed on it. No download, nothing uploaded.">
 
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/css/styles.css?v=6">
+<link rel="stylesheet" href="/assets/css/styles.css?v=7">
 
 <script type="application/ld+json">
 {
@@ -32,6 +32,29 @@
   "operatingSystem": "Any",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "description": "Free browser-based tracking aim training drill: a single target moving on a smooth randomised path, scored as the percentage of the session the cursor spent inside it."
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Do I need to click anything?", "acceptedAnswer": {"@type": "Answer", "text": "No. There is nothing to click and clicking does nothing — the drill only measures where your crosshair is. Just move the mouse and keep the crosshair inside the moving circle for as much of the session as you can."}},
+    {"@type": "Question", "name": "What is a good time-on-target percentage?", "acceptedAnswer": {"@type": "Answer", "text": "On this drill's target size and speed, 50–65% is solid and past 75% means you are leading the target rather than chasing it. Those are this page's own difficulty bands, not a population statistic: a bigger target or a slower path would move them immediately."}},
+    {"@type": "Question", "name": "Why does my score jump around between runs?", "acceptedAnswer": {"@type": "Answer", "text": "The path's phases are randomised every session, so one run may happen to sweep mostly across your comfortable arc and another mostly against it. Take the trend over several runs rather than any single number, and prefer the sixty-second option — it averages out far more of that variation."}},
+    {"@type": "Question", "name": "Does this drill work on a phone or a tablet?", "acceptedAnswer": {"@type": "Answer", "text": "No, and it is the one drill here that does not. A touchscreen only reports a position while a finger is pressed down, so the moment you lift the finger the drill sees no crosshair at all — and while the finger is down it hides the target underneath it. Use a mouse or a trackpad for this one. The other six drills are fine on touch."}},
+    {"@type": "Question", "name": "Should I use a different sensitivity for tracking?", "acceptedAnswer": {"@type": "Answer", "text": "Most people find they want slightly lower sensitivity for tracking than for flicking, and having to choose is exactly why this drill is useful. Rather than switching between two settings, use the score to find one you can both flick and track at — that is the setting that will hold up in a game."}}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Flick Trainer", "item": "https://flicktrainer.com/"},
+    {"@type": "ListItem", "position": 2, "name": "Tracking Aim Trainer", "item": "https://flicktrainer.com/tracking-trainer/"}
+  ]
 }
 </script>
 
@@ -72,7 +95,7 @@
         <li><a href="/gridshot/">Gridshot</a></li>
         <li><a href="/tracking-trainer/" aria-current="page">Tracking Trainer</a></li>
         <li><a href="/precision-trainer/">Precision Trainer</a></li>
-        <li><a href="/articles/what-is-a-good-reaction-time.html">What's a Good Reaction Time?</a></li>
+        <li><a href="/articles/what-is-a-good-reaction-time.html">What Is a Good Time-to-Click?</a></li>
         <li><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. Tracking</a></li>
         <li><a href="/articles/history-of-aim-trainers.html">History of Aim Trainers</a></li>
         <li><a href="/articles/how-this-test-works.html">How This Test Works</a></li>
@@ -85,7 +108,7 @@
     <li><a href="/gridshot/">Gridshot</a></li>
     <li><a href="/tracking-trainer/" aria-current="page">Tracking</a></li>
     <li><a href="/precision-trainer/">Precision</a></li>
-    <li><a href="/articles/what-is-a-good-reaction-time.html">Reaction Time</a></li>
+    <li><a href="/articles/what-is-a-good-reaction-time.html">Time-to-Click</a></li>
     <li><a href="/articles/flick-vs-tracking-aim.html">Flick vs Track</a></li>
     <li><a href="/articles/history-of-aim-trainers.html">History</a></li>
     <li><a href="/articles/how-this-test-works.html">How It Works</a></li>
@@ -96,7 +119,7 @@
 <main id="main">
   <div class="cabinet">
     <div class="marquee">
-      <div class="marquee-logo"><span class="mq-1">Flick</span><span class="mq-2">Track</span></div>
+      <h1 class="marquee-logo"><span class="visually-hidden">Tracking Aim Trainer - Free Smooth-Target Tracking Drill</span><span class="mq-1" aria-hidden="true">Flick</span><span class="mq-2" aria-hidden="true">Track</span></h1>
       <div class="marquee-sub">Stay On Target &middot; flicktrainer.com</div>
     </div>
 
@@ -233,13 +256,21 @@
   </section>
 
   <section class="container-narrow" style="padding-top:0;">
-  <h1>Tracking Trainer</h1>
+  <h2>Tracking Trainer</h2>
 
   <p>One target, moving continuously on a smooth path that never repeats. There is
   nothing to click. Your score is the percentage of the session your crosshair spent
   <em>inside</em> the target &mdash; <strong>time on target</strong> &mdash; sampled
   continuously rather than at discrete moments. It is the only drill on this site with
   no hits and no misses, because neither concept applies.</p>
+
+  <div class="callout callout--coarse">
+    <strong>This drill needs a mouse or a trackpad.</strong> A touchscreen reports a
+    position only while a finger is down, and the finger then covers the target it is
+    supposed to follow. The score you get here on a phone is not a measurement of your
+    tracking. Every other drill on this site works on touch &mdash; try
+    <a href="/gridshot/">gridshot</a> or the <a href="/">flick drill</a> instead.
+  </div>
 
   <h2 id="different">Why this is a different skill</h2>
   <p>Flicking and tracking are close to opposite motor problems. A flick is
@@ -319,6 +350,10 @@
     <p>The path's phases are randomised every session, so one run may happen to sweep mostly across your comfortable arc and another mostly against it. Take the trend over several runs rather than any single number, and prefer the sixty-second option &mdash; it averages out far more of that variation.</p>
   </div>
   <div class="faq-item">
+    <h3>Does this drill work on a phone or a tablet?</h3>
+    <p>No, and it is the one drill here that does not. A touchscreen only reports a position while a finger is pressed down, so the moment you lift the finger the drill sees no crosshair at all &mdash; and while the finger is down it hides the target underneath it. Use a mouse or a trackpad for this one. The other six drills are fine on touch.</p>
+  </div>
+  <div class="faq-item">
     <h3>Should I use a different sensitivity for tracking?</h3>
     <p>Most people find they want slightly lower sensitivity for tracking than for flicking, and having to choose is exactly why this drill is useful. Rather than switching between two settings, use the score to find one you can both flick and track at &mdash; that is the setting that will hold up in a game.</p>
   </div>
@@ -343,6 +378,15 @@
 <div class="unlock-stack" id="unlock-stack" aria-live="polite"></div>
 
 <footer class="site-footer">
+  <nav class="footer-related" aria-label="Related tools">
+    <h2>Related tools</h2>
+    <ul>
+      <li><a href="https://reflexzap.com" rel="noopener">Reaction Time Test</a> <span>How fast you react to a signal</span></li>
+      <li><a href="https://cpsboost.com" rel="noopener">Click Speed Test</a> <span>Clicks per second, several formats</span></li>
+      <li><a href="https://stickdriftcheck.com" rel="noopener">Stick Drift Check</a> <span>Test a controller for drift</span></li>
+      <li><a href="https://hardwarecheckup.com" rel="noopener">Hardware Checkup</a> <span>Mouse, keyboard and display tests</span></li>
+    </ul>
+  </nav>
   <div class="footer-inner">
     <div>&copy; <span id="year"></span> flicktrainer.com</div>
     <div class="footer-links">
@@ -352,8 +396,8 @@
   </div>
 </footer>
 
-<script src="/assets/js/app.js?v=6"></script>
-<script src="/assets/js/nav.js?v=6"></script>
+<script src="/assets/js/app.js?v=7"></script>
+<script src="/assets/js/nav.js?v=7"></script>
 <a href="https://erabb.it" class="erabbit-mark" aria-label="erabb.it"><img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128007;</text></svg>" width="10" height="10" alt=""></a>
 </body>
 </html>

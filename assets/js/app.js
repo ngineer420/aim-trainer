@@ -288,7 +288,28 @@
     return { record: { accuracy: bestAccuracy, avgTime: bestAvgTime }, improved };
   }
 
+  /* A run that the browser stopped rendering is not a run.
+     `tick()` re-arms itself with requestAnimationFrame, and a hidden tab stops
+     delivering animation frames. The target expiry timer is a setTimeout, and a
+     hidden tab keeps firing that. So a backgrounded run kept counting misses
+     and never reached endSession(): a 15s run hidden at t=1s still sat on the
+     game screen at t=31s with 23 misses on the board. The clock had read 0.0s
+     for fifteen seconds.
+
+     The measurement cannot be salvaged after the fact. Time-to-click is read
+     from performance.now(), which does not pause, so every target that expired
+     while the tab was hidden is a miss the user never saw and never had the
+     chance to take. Time-on-target is worse: the tracking loop simply did not
+     run. So the run is abandoned rather than scored, and nothing is written to
+     localStorage.
+
+     Pure so the rule can be asserted without a browser. */
+  function shouldAbandonRun(visibilityState, runIsLive) {
+    return runIsLive === true && visibilityState === "hidden";
+  }
+
   const PURE = {
+    shouldAbandonRun,
     calcAccuracy,
     calcAverageReactionTime,
     calcThroughput,
@@ -1207,6 +1228,28 @@
   });
 
   quitBtn.addEventListener("click", () => endSession(true));
+
+  /* ---------------- backgrounded tab ----------------
+     endSession(true) is the quit path: it clears the expiry timer, cancels the
+     frame loop, empties the range, returns to setup and drops the session
+     without writing a best, a history entry or any XP. That is exactly what an
+     abandoned run needs, so the handler reuses it rather than inventing a
+     second teardown that could drift from it. */
+  function abandonRun() {
+    if (!shouldAbandonRun(document.visibilityState, !!session && !session.ended)) return;
+    endSession(true);
+    setCombo(0);
+    showToast("Run abandoned — the tab was hidden");
+  }
+
+  document.addEventListener("visibilitychange", abandonRun);
+  // Safari on iOS can put a page in the back/forward cache without ever
+  // reporting a visibilitychange, so pagehide is the second net.
+  window.addEventListener("pagehide", () => {
+    if (!session || session.ended) return;
+    endSession(true);
+    setCombo(0);
+  });
 
   function cleanupActiveTarget() {
     if (session && session.activeTarget) {

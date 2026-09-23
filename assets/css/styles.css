@@ -381,20 +381,6 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
                                        name on the summary keeps the full string */
 }
 
-/* ---------- hero ---------- */
-.hero { text-align: center; padding: 14px 0 12px; }
-.hero h1 {
-  font-size: clamp(20px, 3.4vw, 30px);
-  margin: 0 0 8px;
-  letter-spacing: -0.015em;
-}
-.hero p { color: var(--text-dim); margin: 0; font-size: 14.5px; }
-.hero .trust-line {
-  margin-top: 8px;
-  font-size: 12.5px;
-  color: var(--text-faint);
-}
-.hero .trust-line .dot { color: var(--accent); margin: 0 8px; }
 
 /* ---------- panels ---------- */
 .panel {
@@ -516,7 +502,6 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
 }
 
 /* ---------- results screen ---------- */
-.hero--results { padding-top: 12px; }
 .rating-badge {
   display: inline-flex;
   align-items: baseline;
@@ -842,7 +827,12 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
   background: #2a0808;
   box-shadow: 0 0 0 4px #000, 0 0 0 8px var(--pa), 0 0 0 12px #000;
 }
-.marquee-logo { display: block; line-height: 1.15; }
+/* The marquee is the page <h1>. Cancel the user-agent heading defaults:
+   0.67em of vertical margin would push the cabinet down, and the 2em
+   font-size would reflow anything inside that does not set its own. The
+   shared PixArc rule above already pins font-weight to 400, which stops
+   Chrome synthesising a faux bold on a single-weight pixel font. */
+.marquee-logo { display: block; line-height: 1.15; margin: 0; font-size: 1rem; }
 .marquee-logo .mq-1, .marquee-logo .mq-2 {
   text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 4px 4px 0 #7a1500;
 }
@@ -1147,3 +1137,40 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 60px; }
    only site in the set that was missing it. */
 .erabbit-mark { display: block; width: 10px; margin: 0 0 0 auto; line-height: 0; cursor: default; }
 .erabbit-mark img { display: block; width: 10px; height: 10px; }
+
+/* A callout that only a touch-primary device ever sees. `pointer: coarse`
+   reports the PRIMARY input, so a laptop with both a mouse and a touchscreen
+   still reads as fine and never shows it. No JavaScript, so it is correct with
+   scripting off too. */
+.callout--coarse { display: none; }
+@media (pointer: coarse) {
+  .callout--coarse { display: block; }
+}
+
+/* ---------- footer: related tools ----------
+   Four peers, not the whole portfolio. A list of nineteen reads as a link farm
+   and helps nobody. */
+.footer-related {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.footer-related h2 {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0 0 10px;
+}
+.footer-related ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px 22px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.footer-related li { font-size: 13.5px; line-height: 1.45; }
+.footer-related a { font-weight: 600; }
+.footer-related span { display: block; color: var(--text-dim); font-size: 12.5px; }

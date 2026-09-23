@@ -20,7 +20,7 @@
 <meta name="twitter:description" content="Free precision aim trainer in your browser. Small 26px targets that do not shrink and do not rush you, scored on accuracy first rather than speed. No download, nothing uploaded.">
 
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/css/styles.css?v=6">
+<link rel="stylesheet" href="/assets/css/styles.css?v=7">
 
 <script type="application/ld+json">
 {
@@ -32,6 +32,28 @@
   "operatingSystem": "Any",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "description": "Free browser-based precision aim training drill: small static targets with a long lifespan, rated on accuracy rather than reaction speed."
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Is a slow run really a good result here?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, if it is accurate. The rating tiers on this page read from your accuracy rather than your average time, because the whole point of the drill is to practise not firing before the crosshair has settled. Speed is still reported — it is just not what you are graded on."}},
+    {"@type": "Question", "name": "Why don't the targets shrink like they do on the main trainer?", "acceptedAnswer": {"@type": "Answer", "text": "Shrinking adds time pressure, and time pressure is what this drill removes. A target that gets harder while you correct punishes careful correction, which is the exact habit this page exists to build."}},
+    {"@type": "Question", "name": "Should I use timed or count mode?", "acceptedAnswer": {"@type": "Answer", "text": "Count. A fixed number of targets takes the clock out of the drill completely, which is the last thing that might tempt you to rush. Thirty targets is a good default."}},
+    {"@type": "Question", "name": "My accuracy is high but my time is terrible. Is that bad?", "acceptedAnswer": {"@type": "Answer", "text": "Not on this drill. It becomes a problem only if the same gap shows up on the flick drill, where speed is what is being measured. Running both and comparing is how you find out whether you are genuinely deliberate or just slow."}}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Flick Trainer", "item": "https://flicktrainer.com/"},
+    {"@type": "ListItem", "position": 2, "name": "Precision Aim Trainer", "item": "https://flicktrainer.com/precision-trainer/"}
+  ]
 }
 </script>
 
@@ -72,7 +94,7 @@
         <li><a href="/gridshot/">Gridshot</a></li>
         <li><a href="/tracking-trainer/">Tracking Trainer</a></li>
         <li><a href="/precision-trainer/" aria-current="page">Precision Trainer</a></li>
-        <li><a href="/articles/what-is-a-good-reaction-time.html">What's a Good Reaction Time?</a></li>
+        <li><a href="/articles/what-is-a-good-reaction-time.html">What Is a Good Time-to-Click?</a></li>
         <li><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. Tracking</a></li>
         <li><a href="/articles/history-of-aim-trainers.html">History of Aim Trainers</a></li>
         <li><a href="/articles/how-this-test-works.html">How This Test Works</a></li>
@@ -85,7 +107,7 @@
     <li><a href="/gridshot/">Gridshot</a></li>
     <li><a href="/tracking-trainer/">Tracking</a></li>
     <li><a href="/precision-trainer/" aria-current="page">Precision</a></li>
-    <li><a href="/articles/what-is-a-good-reaction-time.html">Reaction Time</a></li>
+    <li><a href="/articles/what-is-a-good-reaction-time.html">Time-to-Click</a></li>
     <li><a href="/articles/flick-vs-tracking-aim.html">Flick vs Track</a></li>
     <li><a href="/articles/history-of-aim-trainers.html">History</a></li>
     <li><a href="/articles/how-this-test-works.html">How It Works</a></li>
@@ -96,7 +118,7 @@
 <main id="main">
   <div class="cabinet">
     <div class="marquee">
-      <div class="marquee-logo"><span class="mq-1">Flick</span><span class="mq-2">Precise</span></div>
+      <h1 class="marquee-logo"><span class="visually-hidden">Precision Aim Trainer - Small Static Targets, Accuracy First</span><span class="mq-1" aria-hidden="true">Flick</span><span class="mq-2" aria-hidden="true">Precise</span></h1>
       <div class="marquee-sub">Slow Is Smooth &middot; flicktrainer.com</div>
     </div>
 
@@ -259,7 +281,7 @@
   </section>
 
   <section class="container-narrow" style="padding-top:0;">
-  <h1>Precision Trainer</h1>
+  <h2>Precision Trainer</h2>
 
   <p>Small targets that do not shrink and do not rush you. One at a time, held for
   nearly two seconds, at a fixed 26-pixel size. Your score is <strong>accuracy
@@ -363,6 +385,15 @@
 <div class="unlock-stack" id="unlock-stack" aria-live="polite"></div>
 
 <footer class="site-footer">
+  <nav class="footer-related" aria-label="Related tools">
+    <h2>Related tools</h2>
+    <ul>
+      <li><a href="https://reflexzap.com" rel="noopener">Reaction Time Test</a> <span>How fast you react to a signal</span></li>
+      <li><a href="https://cpsboost.com" rel="noopener">Click Speed Test</a> <span>Clicks per second, several formats</span></li>
+      <li><a href="https://stickdriftcheck.com" rel="noopener">Stick Drift Check</a> <span>Test a controller for drift</span></li>
+      <li><a href="https://hardwarecheckup.com" rel="noopener">Hardware Checkup</a> <span>Mouse, keyboard and display tests</span></li>
+    </ul>
+  </nav>
   <div class="footer-inner">
     <div>&copy; <span id="year"></span> flicktrainer.com</div>
     <div class="footer-links">
@@ -372,8 +403,8 @@
   </div>
 </footer>
 
-<script src="/assets/js/app.js?v=6"></script>
-<script src="/assets/js/nav.js?v=6"></script>
+<script src="/assets/js/app.js?v=7"></script>
+<script src="/assets/js/nav.js?v=7"></script>
 <a href="https://erabb.it" class="erabbit-mark" aria-label="erabb.it"><img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128007;</text></svg>" width="10" height="10" alt=""></a>
 </body>
 </html>
