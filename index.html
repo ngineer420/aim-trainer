@@ -21,7 +21,7 @@
 <meta name="twitter:image" content="https://flicktrainer.com/assets/og-image.png">
 
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/css/styles.css?v=6">
+<link rel="stylesheet" href="/assets/css/styles.css?v=7">
 
 <script type="application/ld+json">
 {
@@ -33,6 +33,46 @@
   "operatingSystem": "Any",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "description": "Free browser-based FPS aim trainer: click targets as fast and accurately as possible and track reaction time, accuracy, and throughput."
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What's a good reaction time on this test?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Casual players typically average 350-450ms per target. Competitive FPS players training seriously often land in the 250-320ms range, while sub-250ms averages are genuinely fast and rare."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does mode or target size affect my score?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — targets shrink from 58px down to 34px over their 1.3 second lifespan, so hitting one early (while it's larger) is easier than hitting one right before it disappears. Timed and Target Count modes can also produce slightly different averages since they change your incentive to rush or play safe."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does this work on mobile?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "This drill does, and so do gridshot, precision and the three game pages. Targets respond to both touch and mouse input, and each tap or click is counted once — no double-counting between input types. The one exception is the tracking drill, which needs a mouse or a trackpad: a touchscreen reports a position only while a finger is down, and the finger then covers the target. Note also that a tap is not a flick, so touch scores are not comparable to mouse scores on any drill."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is my personal best saved anywhere online?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Your best accuracy and best average time per mode are saved only in your browser's local storage on this device. Clearing your browser data or switching devices/browsers will reset them."
+      }
+    }
+  ]
 }
 </script>
 
@@ -73,7 +113,7 @@
         <li><a href="/gridshot/">Gridshot</a></li>
         <li><a href="/tracking-trainer/">Tracking Trainer</a></li>
         <li><a href="/precision-trainer/">Precision Trainer</a></li>
-        <li><a href="/articles/what-is-a-good-reaction-time.html">What's a Good Reaction Time?</a></li>
+        <li><a href="/articles/what-is-a-good-reaction-time.html">What Is a Good Time-to-Click?</a></li>
         <li><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. Tracking</a></li>
         <li><a href="/articles/history-of-aim-trainers.html">History of Aim Trainers</a></li>
         <li><a href="/articles/how-this-test-works.html">How This Test Works</a></li>
@@ -86,7 +126,7 @@
     <li><a href="/gridshot/">Gridshot</a></li>
     <li><a href="/tracking-trainer/">Tracking</a></li>
     <li><a href="/precision-trainer/">Precision</a></li>
-    <li><a href="/articles/what-is-a-good-reaction-time.html">Reaction Time</a></li>
+    <li><a href="/articles/what-is-a-good-reaction-time.html">Time-to-Click</a></li>
     <li><a href="/articles/flick-vs-tracking-aim.html">Flick vs Track</a></li>
     <li><a href="/articles/history-of-aim-trainers.html">History</a></li>
     <li><a href="/articles/how-this-test-works.html">How It Works</a></li>
@@ -97,7 +137,7 @@
 <main id="main">
   <div class="cabinet">
     <div class="marquee">
-      <div class="marquee-logo"><span class="mq-1">Flick</span><span class="mq-2">Trainer</span></div>
+      <h1 class="marquee-logo"><span class="visually-hidden">FlickTrainer — Free Browser Aim Trainer</span><span class="mq-1" aria-hidden="true">Flick</span><span class="mq-2" aria-hidden="true">Trainer</span></h1>
       <div class="marquee-sub">Dead-Eye Shooting Range · flicktrainer.com</div>
     </div>
 
@@ -279,7 +319,7 @@
     </div>
     <div class="faq-item">
       <h3>Does this work on mobile?</h3>
-      <p>Yes. Targets respond to both touch and mouse input, and each tap or click is counted once — no double-counting between input types.</p>
+      <p>This drill does, and so do gridshot, precision and the three game pages. Targets respond to both touch and mouse input, and each tap or click is counted once — no double-counting between input types. The one exception is the <a href="/tracking-trainer/">tracking drill</a>, which needs a mouse or a trackpad: a touchscreen reports a position only while a finger is down, and the finger then covers the target. Note also that a tap is not a flick, so touch scores are not comparable to mouse scores on any drill.</p>
     </div>
     <div class="faq-item">
       <h3>Is my personal best saved anywhere online?</h3>
@@ -308,7 +348,7 @@
   <section class="container-narrow" style="padding-top:0;" id="articles">
     <h2 style="margin-top:0;">Learn more about aim training</h2>
     <div class="faq-item">
-      <h3><a href="/articles/what-is-a-good-reaction-time.html">What's a good reaction time for aim training?</a></h3>
+      <h3><a href="/articles/what-is-a-good-reaction-time.html">What is a good time-to-click in an aim trainer?</a></h3>
       <p>Realistic benchmarks: the human reflex floor, what casual vs. competitive FPS players score, and why raw reaction time alone doesn't equal good aim.</p>
     </div>
     <div class="faq-item">
@@ -330,6 +370,15 @@
 <div class="unlock-stack" id="unlock-stack" aria-live="polite"></div>
 
 <footer class="site-footer">
+  <nav class="footer-related" aria-label="Related tools">
+    <h2>Related tools</h2>
+    <ul>
+      <li><a href="https://reflexzap.com" rel="noopener">Reaction Time Test</a> <span>How fast you react to a signal</span></li>
+      <li><a href="https://cpsboost.com" rel="noopener">Click Speed Test</a> <span>Clicks per second, several formats</span></li>
+      <li><a href="https://stickdriftcheck.com" rel="noopener">Stick Drift Check</a> <span>Test a controller for drift</span></li>
+      <li><a href="https://hardwarecheckup.com" rel="noopener">Hardware Checkup</a> <span>Mouse, keyboard and display tests</span></li>
+    </ul>
+  </nav>
   <div class="footer-inner">
     <div>© <span id="year"></span> flicktrainer.com</div>
     <div class="footer-links">
@@ -339,8 +388,8 @@
   </div>
 </footer>
 
-<script src="/assets/js/app.js?v=6"></script>
-<script src="/assets/js/nav.js?v=6"></script>
+<script src="/assets/js/app.js?v=7"></script>
+<script src="/assets/js/nav.js?v=7"></script>
 <a href="https://erabb.it" class="erabbit-mark" aria-label="erabb.it"><img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐇</text></svg>" width="10" height="10" alt=""></a>
 </body>
 </html>

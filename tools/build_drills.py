@@ -38,7 +38,7 @@ NAV_RE = re.compile(r"(<!-- nav:start -->)(.*?)(<!-- nav:end -->)", re.S)
 
 # Bump together with the ?v= in every other page whenever a coupled
 # HTML/CSS/JS change ships, or cached visitors get new HTML with stale CSS.
-V = "6"
+V = "7"
 
 # Copied byte-for-byte from index.html. It is commented out across this whole
 # site; a new page is not the place to unilaterally turn ads on.
@@ -77,6 +77,97 @@ def faq(items):
     return "\n".join(out)
 
 
+TAG_RE = re.compile(r"<[^>]+>")
+
+
+def plain(html):
+    """Strip inline markup so a schema string matches the visible sentence.
+
+    The FAQ answers carry <em> and <a> for the reader. JSON-LD wants the text a
+    person sees, so the same list feeds both and the two can never drift.
+    """
+    text = TAG_RE.sub("", html)
+    for ent, ch in (("&mdash;", "—"), ("&ndash;", "–"), ("&amp;", "&"),
+                    ("&lt;", "<"), ("&gt;", ">"), ("&quot;", '"'), ("&nbsp;", " ")):
+        text = text.replace(ent, ch)
+    return " ".join(text.split())
+
+
+def json_str(text):
+    out = []
+    for ch in text:
+        if ch == '"':
+            out.append('\\"')
+        elif ch == "\\":
+            out.append("\\\\")
+        elif ch in "\n\r\t":
+            out.append(" ")
+        elif ord(ch) < 0x20:
+            continue
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def faq_jsonld(items):
+    """FAQPage schema built from the same list that renders the visible FAQ."""
+    if not items:
+        return ""
+    entities = []
+    for q, a in items:
+        entities.append(
+            '    {"@type": "Question", "name": "%s", "acceptedAnswer": '
+            '{"@type": "Answer", "text": "%s"}}' % (json_str(plain(q)), json_str(plain(a)))
+        )
+    return (
+        '<script type="application/ld+json">\n'
+        "{\n"
+        '  "@context": "https://schema.org",\n'
+        '  "@type": "FAQPage",\n'
+        '  "mainEntity": [\n%s\n  ]\n'
+        "}\n"
+        "</script>" % ",\n".join(entities)
+    )
+
+
+def breadcrumb_jsonld(name, url):
+    """Every generated page sits one level below the trainer at the root."""
+    return (
+        '<script type="application/ld+json">\n'
+        "{\n"
+        '  "@context": "https://schema.org",\n'
+        '  "@type": "BreadcrumbList",\n'
+        '  "itemListElement": [\n'
+        '    {"@type": "ListItem", "position": 1, "name": "Flick Trainer", '
+        '"item": "https://flicktrainer.com/"},\n'
+        '    {"@type": "ListItem", "position": 2, "name": "%s", "item": "%s"}\n'
+        "  ]\n"
+        "}\n"
+        "</script>" % (json_str(name), url)
+    )
+
+
+# Four peers, not nineteen. Each one answers a question somebody who just
+# measured their aim plausibly has next, which is the only reason to link out.
+RELATED = [
+    ("https://reflexzap.com", "Reaction Time Test", "How fast you react to a signal"),
+    ("https://cpsboost.com", "Click Speed Test", "Clicks per second, several formats"),
+    ("https://stickdriftcheck.com", "Stick Drift Check", "Test a controller for drift"),
+    ("https://hardwarecheckup.com", "Hardware Checkup", "Mouse, keyboard and display tests"),
+]
+
+
+def related_block(indent="  "):
+    out = ['<nav class="footer-related" aria-label="Related tools">',
+           "  <h2>Related tools</h2>",
+           "  <ul>"]
+    for href, label, blurb in RELATED:
+        out.append('    <li><a href="%s" rel="noopener">%s</a> <span>%s</span></li>'
+                   % (href, label, blurb))
+    out += ["  </ul>", "</nav>"]
+    return "\n".join(indent + ln for ln in out)
+
+
 def keep_reading(items):
     out = ["  <h2>Keep training</h2>"]
     for href, title, blurb in items:
@@ -90,7 +181,7 @@ def keep_reading(items):
 # Page content
 # --------------------------------------------------------------------------
 
-GRIDSHOT_BODY = """  <h1>Gridshot</h1>
+GRIDSHOT_BODY = """  <h2>Gridshot</h2>
 
   <p>Nine fixed positions in a three-by-three grid. Three targets are alive at any
   moment; clear one and another appears in a cell that is currently empty. Your score
@@ -190,13 +281,21 @@ GRIDSHOT_FAQ = [
      "are tapping locations, not aiming at them. Compare like with like."),
 ]
 
-TRACKING_BODY = """  <h1>Tracking Trainer</h1>
+TRACKING_BODY = """  <h2>Tracking Trainer</h2>
 
   <p>One target, moving continuously on a smooth path that never repeats. There is
   nothing to click. Your score is the percentage of the session your crosshair spent
   <em>inside</em> the target &mdash; <strong>time on target</strong> &mdash; sampled
   continuously rather than at discrete moments. It is the only drill on this site with
   no hits and no misses, because neither concept applies.</p>
+
+  <div class="callout callout--coarse">
+    <strong>This drill needs a mouse or a trackpad.</strong> A touchscreen reports a
+    position only while a finger is down, and the finger then covers the target it is
+    supposed to follow. The score you get here on a phone is not a measurement of your
+    tracking. Every other drill on this site works on touch &mdash; try
+    <a href="/gridshot/">gridshot</a> or the <a href="/">flick drill</a> instead.
+  </div>
 
   <h2 id="different">Why this is a different skill</h2>
   <p>Flicking and tracking are close to opposite motor problems. A flick is
@@ -281,6 +380,12 @@ TRACKING_FAQ = [
      "mostly across your comfortable arc and another mostly against it. Take the trend "
      "over several runs rather than any single number, and prefer the sixty-second option "
      "&mdash; it averages out far more of that variation."),
+    ("Does this drill work on a phone or a tablet?",
+     "No, and it is the one drill here that does not. A touchscreen only reports a "
+     "position while a finger is pressed down, so the moment you lift the finger the "
+     "drill sees no crosshair at all &mdash; and while the finger is down it hides the "
+     "target underneath it. Use a mouse or a trackpad for this one. The other six drills "
+     "are fine on touch."),
     ("Should I use a different sensitivity for tracking?",
      "Most people find they want slightly lower sensitivity for tracking than for "
      "flicking, and having to choose is exactly why this drill is useful. Rather than "
@@ -288,7 +393,7 @@ TRACKING_FAQ = [
      "track at &mdash; that is the setting that will hold up in a game."),
 ]
 
-PRECISION_BODY = """  <h1>Precision Trainer</h1>
+PRECISION_BODY = """  <h2>Precision Trainer</h2>
 
   <p>Small targets that do not shrink and do not rush you. One at a time, held for
   nearly two seconds, at a fixed 26-pixel size. Your score is <strong>accuracy
@@ -378,76 +483,282 @@ PRECISION_FAQ = [
 ]
 
 
-def preset_body(game, size_note, cfg, why, extra_faq):
-    return """  <h1>%(game)s Aim Trainer</h1>
+# ---------------------------------------------------------------------------
+# The three game pages
+#
+# These used to be one template with the game's name substituted in, which made
+# them 61% identical to each other as measured on five-word sequences. Three
+# pages that say the same thing compete with each other and none of them wins.
+#
+# They are written out separately now because the three games genuinely set
+# different aiming problems. Counter-Strike is a one-bullet game decided by a
+# stopped first shot. Valorant is a one-bullet game decided by utility and a
+# pre-aimed angle. Fortnite is a two-hundred-effective-hit-point game decided by
+# how fast you can reacquire somebody who keeps rebuilding the room. The tuning
+# numbers on each page follow from that, and so does the prose.
+#
+# test/scoring.test.js asserts the pairwise five-gram overlap stays under 25%.
+# ---------------------------------------------------------------------------
 
-  <p>The flick drill, retuned to feel like %(game)s. Same engine, same scoring, same
-  browser &mdash; targets appear one at a time at random positions, shrink over their
-  lifespan, and you are scored on average time-to-click, accuracy and throughput. What
-  changes is the three numbers that decide how the drill feels, and they are printed
-  below rather than left implied.</p>
+CSGO_BODY = """  <h2>Counter-Strike aim is a stopped first bullet</h2>
+
+  <p>Counter-Strike hands you a perfectly accurate first shot while you stand still, and
+  takes it back the moment you move. Every other aiming habit in the game follows from
+  that one rule. An AK-47 bullet to the head kills through a helmet at any distance on
+  any map, so a stopped player whose crosshair is already at head height wins the duel
+  before time-to-kill means anything. The M4A4 and the M4A1-S do not, which is why the
+  two sides of the same round aim slightly differently for the same shot.</p>
+
+  <p>This drill trains the stopped first bullet and nothing else. It gives you the
+  longest window on the site on purpose, because in Counter-Strike the shot you set up
+  beats the shot you rush, and a drill that rewards rushing would teach the opposite of
+  what the game pays for.</p>
 
   <div class="callout">
-    <strong>This page's tuning.</strong> Targets start at <strong>%(start)spx</strong>
-    and shrink to <strong>%(end)spx</strong> over a lifespan of
-    <strong>%(life)sms</strong>, against the default drill's 58px, 34px and 1300ms.
-    %(size_note)s
+    <strong>Counter-Strike tuning.</strong> A target opens at <strong>%(start)spx</strong>,
+    closes to <strong>%(end)spx</strong>, and lives for <strong>%(life)sms</strong>. That
+    is the most patient window here. Rushing costs you accuracy and buys you almost
+    nothing, which is the trade the game makes.
   </div>
 
-  <h2 id="why">Why these numbers</h2>
-  %(why)s
+  <h2 id="sens">Sensitivity: read it in centimetres, not in the menu number</h2>
 
-  <h2 id="honesty">What this is not</h2>
-  <p>It is not a replica of %(game)s's hitboxes, and no browser page can be. A real
-  hitbox is a three-dimensional volume attached to an animating skeleton, at a distance,
-  behind a weapon with its own spread and recoil model, on a server with its own tick
-  rate. What a flat circle on a web page can copy is the <em>feel</em> of the aiming
-  problem &mdash; roughly how big the thing you are clicking is relative to the screen,
-  and roughly how long you have to do it &mdash; and that is what has been tuned here.</p>
+  <p>The number in the Counter-Strike video menu means nothing on its own, because it is
+  multiplied by your mouse DPI. The two figures players actually compare are eDPI, which
+  is DPI multiplied by in-game sensitivity, and cm/360, which is how far the mouse
+  travels to turn all the way round.</p>
 
-  <p>Treat it as a warm-up that puts your hand in approximately the right register before
-  you load the game, not as a simulator. The transferable part of aim training is the
-  motor habit, and motor habits do not care whether the target was a circle or a
-  character model. Your score here is also, as on every drill on this site, a browser
-  measurement: it includes your screen's refresh interval, your mouse's polling rate and
-  your operating system's input handling, none of which are you.</p>
+  <p>Professional Counter-Strike has settled into a narrow band. Almost everybody runs
+  400 or 800 DPI, with an in-game sensitivity that puts eDPI somewhere between 700 and
+  1000. At 800 eDPI a full turn takes about 52 cm of mousepad. That is a low
+  sensitivity by the standards of most other shooters, and it is low for a reason: the
+  game asks for small, exact corrections at head height far more often than it asks for
+  large turns, and a low sensitivity makes small corrections cheap.</p>
 
-  <h2 id="routine">A sensible routine</h2>
-  <p>Two or three thirty-second runs before you play, not twenty minutes. Aim training
-  has sharply diminishing returns per session and works far better as a short daily habit
-  than as an occasional long grind &mdash; the goal before a session is a warm hand and a
-  calibrated sense of your sensitivity, both of which take about ninety seconds. If you
-  want to actually improve rather than just warm up, the three tier-one drills each
-  isolate a different half of the problem: <a href="/gridshot/">gridshot</a> for movement
-  between known points, <a href="/tracking-trainer/">tracking</a> for continuous
-  correction, <a href="/precision-trainer/">precision</a> for the last few pixels.</p>
+  <p>One more setting belongs here. Leave <code>zoom_sensitivity_ratio_mouse</code> at
+  1.0. It keeps your scoped AWP sensitivity matched to your unscoped sensitivity in
+  degrees per centimetre, so the same hand movement means the same rotation whether you
+  are scoped or not. Practising two different sensitivities is the fastest way to be
+  mediocre at both.</p>
 
-  <p>One thing worth doing on this page specifically: keep your in-game sensitivity and
-  your desktop sensitivity aligned before you use it. A warm-up at a different
-  sensitivity from the one you are about to play at is worse than no warm-up, because you
-  spend the first minutes of the match recalibrating away from what you just practised.</p>
+  <p>Set this page to the sensitivity you are about to play at. A warm-up at the wrong
+  sensitivity is worse than no warm-up, because you spend the first rounds unlearning
+  it.</p>
+
+  <h2 id="flick">What a flick means in Counter-Strike</h2>
+
+  <p>Less than you would think. Counter-Strike is a crosshair-placement game: you walk
+  the map with the crosshair already at head height on the angle you are about to clear,
+  so the usual correction when somebody appears is a few degrees, not a swing. Players
+  who flick a long way in Counter-Strike are usually paying for a placement mistake they
+  made two seconds earlier.</p>
+
+  <p>The genuine long flick in this game is the AWP snap. One bullet anywhere above the
+  legs ends the round, the rifle is slow to re-chamber, and the scope narrows your view
+  to the point where an off-angle appearance really is a swing. That is one shot per
+  fight at most, which is why the drill here is a single target at a time rather than a
+  stream.</p>
+
+  <h2 id="recoil">Spray control is a different skill, and this page does not have it</h2>
+
+  <p>Counter-Strike recoil is deterministic. The AK-47 throws the first ten bullets up
+  and then sideways in the same shape every single time, and controlling it means
+  pulling the mouse along that shape from memory while counter-strafing to keep your
+  feet still. It is pattern memorisation plus footwork.</p>
+
+  <p>None of that exists in a browser page with no weapon, no recoil model and no
+  movement keys. This drill covers the part of the fight that happens before recoil
+  starts: finding the head and stopping on it. Learn the spray in the game, on a
+  practice map, against a wall.</p>
+
+  <h2 id="check">Reading your result</h2>
+
+  <p>Compare your accuracy here against your accuracy on the
+  <a href="/valorant-aim-trainer/">Valorant tuning</a>. The Valorant page gives you 400ms
+  less per target and a smaller target. If your accuracy is not clearly better on this
+  page, you are firing on arrival rather than on settling, and the extra 400ms is
+  telling you so.</p>
+
+  <p>Your number here also includes your monitor's refresh interval, your mouse polling
+  rate and your operating system's input stack. Those are the same for every run on the
+  same machine, so the trend is meaningful even though the absolute value is not a
+  measurement of you alone.</p>
 
 %(faq)s
 
-%(keep)s""" % {
-        "game": game,
-        "start": cfg["start"],
-        "end": cfg["end"],
-        "life": cfg["life"],
-        "size_note": size_note,
-        "why": why,
-        "faq": faq(extra_faq),
-        "keep": keep_reading([
-            ("/gridshot/", "Gridshot", "Nine fixed positions, three targets live at once, scored in targets per second."),
-            ("/tracking-trainer/", "Tracking Trainer", "One target on a smooth path, scored on the share of the session your crosshair was inside it."),
-            ("/precision-trainer/", "Precision Trainer", "Small static targets, accuracy first &mdash; the drill where taking your time is correct."),
-        ]),
-    }
+%(keep)s"""
+
+
+VALORANT_BODY = """  <h2>One bullet to the head, and the head is small</h2>
+
+  <p>A Vandal round to the head does 160 damage at every range in Valorant. A full-health
+  opponent with full shields has 150 effective hit points. There is no time-to-kill to
+  discuss: you either put the first bullet in the head or you start a fight you might
+  lose. The Phantom is almost the same story, except that its headshot damage falls from
+  156 to 140 past about 15 metres, which still kills an unshielded head and still makes
+  distance a decision rather than a detail.</p>
+
+  <p>That is the whole reason this page carries the smallest targets on the site. The
+  defining demand in Valorant is not speed of arrival, it is landing inside a small area
+  on the first attempt.</p>
+
+  <div class="callout">
+    <strong>Valorant tuning.</strong> A target opens at <strong>%(start)spx</strong>,
+    closes to <strong>%(end)spx</strong>, and lives for <strong>%(life)sms</strong>.
+    Small and brief. Expect your accuracy on this page to sit several points below what
+    you score on the <a href="/csgo-aim-trainer/">Counter-Strike tuning</a>, and do not
+    read that as getting worse.
+  </div>
+
+  <h2 id="edpi">eDPI, and why Valorant numbers look so small</h2>
+
+  <p>Valorant players compare eDPI, which is mouse DPI multiplied by the in-game
+  sensitivity. The professional band sits between roughly 200 and 360, which usually
+  means 800 DPI with an in-game sensitivity between 0.25 and 0.45.</p>
+
+  <p>Those numbers look tiny next to Counter-Strike, and the reason is arithmetic rather
+  than preference: Valorant's sensitivity scale is about three times coarser, so the same
+  arm movement needs about a third of the number. A Valorant sensitivity of 0.35 and a
+  Counter-Strike sensitivity of 1.1 turn you about the same distance. Convert between
+  the two by dividing or multiplying by 3.18, and never by copying the raw value.</p>
+
+  <p>Set the scoped multiplier to 1.0 unless you have a specific reason not to. It keeps
+  the Operator matched to your hip sensitivity in degrees per centimetre.</p>
+
+  <p>Whatever you play at, play this page at the same figure. A warm-up at a different
+  sensitivity recalibrates your hand away from the one you are about to need.</p>
+
+  <h2 id="flick">A Valorant flick is usually a correction, not a swing</h2>
+
+  <p>Valorant duels are fought at known angles. Utility decides where and when the fight
+  happens, so by the time an enemy is visible you should already be looking at head
+  height on the spot they have to walk through. The adjustment that follows is small,
+  and it has to be exact.</p>
+
+  <p>The exceptions are the agents who create their own angles. A Jett dash, a Raze
+  satchel jump and a Chamber teleport all put somebody somewhere you were not aiming,
+  and those are genuine swings. So is an Operator hold that gets peeked from the wrong
+  side. Both are one-shot situations, which is why this drill spawns one target at a
+  time and scores you on whether you got it, not on how many you cleared.</p>
+
+  <h2 id="movement">Standing still is a mechanic here</h2>
+
+  <p>Valorant punishes firing while moving more heavily than most shooters. Your bullets
+  go where you were pointing only if your feet have stopped, and the game gives you a
+  short window after releasing a key before accuracy returns. Good players are
+  constantly stopping, firing and moving again on a rhythm.</p>
+
+  <p>A browser page has no movement keys, so it cannot train that rhythm. What it can
+  train is the half of the habit that lives in your hand: settle, then fire. If you
+  catch yourself clicking as the crosshair is still arriving on this page, you are doing
+  the same thing in game and blaming the spread.</p>
+
+  <h2 id="utility">What this drill deliberately leaves out</h2>
+
+  <p>Aim is a minority of Valorant. Flashes, smokes, mollies, recon darts and trip wires
+  decide most rounds before anybody shoots, and a browser page has none of them. It also
+  has no peeker's advantage, no server tick, no shields and no crosshair-placement
+  discipline, because there is no map to place a crosshair on.</p>
+
+  <p>Treat this as ninety seconds of hand calibration before you queue. That is a real
+  benefit and a small one, and anybody promising more from a web page is selling
+  something.</p>
+
+%(faq)s
+
+%(keep)s"""
+
+
+FORTNITE_BODY = """  <h2>Two hundred hit points, and none of them stand still</h2>
+
+  <p>A Fortnite opponent has 100 health and up to 100 shield. Nothing in the loot pool
+  reliably deletes 200 effective hit points in one shot, so a fight is a sequence:
+  connect, they build, you reacquire, connect again. Time-to-kill is long by the
+  standards of Counter-Strike and Valorant, and the aiming problem that follows is
+  completely different. You are not being asked for one perfect bullet. You are being
+  asked to keep finding somebody who will not stay found.</p>
+
+  <p>So this page carries the largest targets on the site and the shortest window. The
+  difficulty is arriving inside the window, not landing inside a small area.</p>
+
+  <div class="callout">
+    <strong>Fortnite tuning.</strong> A target opens at <strong>%(start)spx</strong>,
+    closes to <strong>%(end)spx</strong>, and lives for only
+    <strong>%(life)sms</strong>. This is the exact opposite trade from the
+    <a href="/valorant-aim-trainer/">Valorant tuning</a>. Watch your average
+    time-to-click here, not your accuracy.
+  </div>
+
+  <h2 id="sens">Fortnite sensitivity is four numbers, not one</h2>
+
+  <p>Fortnite does not have a single sensitivity slider. It has X and Y sensitivity as
+  percentages, a Targeting multiplier for aiming down sights, a Scope multiplier for
+  optics, and separate Build and Edit sensitivities that only affect how fast you turn
+  while placing or editing a piece.</p>
+
+  <p>Competitive players usually run 800 DPI with X and Y between about 6 and 9 per
+  cent, and set Targeting and Scope somewhere between 40 and 55 per cent. Build and Edit
+  sensitivity are then set much higher, often 1.7x to 2.3x, because turning a hundred and
+  eighty degrees to place a wall behind you is a different job from lining up a head.</p>
+
+  <p>That split is why Fortnite aim feels unstable to players arriving from other
+  shooters: you are running two sensitivities in the same fight and switching between
+  them several times a second. Match the hipfire figure when you use this page, since
+  that is the one your shotgun uses.</p>
+
+  <h2 id="bloom">Bloom caps how precise it is worth being</h2>
+
+  <p>Most Fortnite automatic weapons fire into a spread cone rather than at a point. The
+  cone is small on the first shot from a standstill and opens up as you keep firing,
+  jump, or sprint. There is no fixed recoil pattern to memorise, because the scatter is
+  random inside the cone.</p>
+
+  <p>The practical consequence is that past a certain point extra precision buys you
+  nothing, and the skill becomes shot pacing and positioning instead. Tapping a rifle
+  from a standstill keeps the cone tight. Holding the trigger while jumping does not.
+  This drill cannot simulate any of that, and it does not try.</p>
+
+  <h2 id="flick">The Fortnite flick is a box fight</h2>
+
+  <p>Here is the shot this page is built around. You are in a one-by-one box. Somebody
+  edits a wall, and for roughly a fifth of a second there is a human-sized opening with a
+  human in it, three metres away. You snap, you fire a shotgun, and either you took half
+  their health or you did not.</p>
+
+  <p>That is a very large target, a very large angular distance, and a very short window,
+  which is exactly the 68px, 900ms shape this page uses. It is also why Fortnite players
+  can have excellent aim by their own game's standard and still score poorly on drills
+  built for Counter-Strike: they have trained a different motor skill, and it is the
+  correct one for their game.</p>
+
+  <h2 id="axis">The third axis</h2>
+
+  <p>The other two games are played on flat ground against opponents at roughly your own
+  eye level. Fortnite is played on ramps, in towers and out of the sky, so a large share
+  of engagements need a vertical correction as well as a horizontal one, and your Y
+  sensitivity matters as much as your X.</p>
+
+  <p>A flat browser page cannot reproduce height, but random spawn positions do at least
+  spread your corrections across both axes. If you find your downward flicks are
+  consistently worse than your upward ones, that is real and it will show up on a ramp.</p>
+
+  <h2 id="controller">One honest caveat about controller</h2>
+
+  <p>A large part of the Fortnite player base plays on a controller with aim assist,
+  which is a fundamentally different skill: the game is helping you track, and your job
+  becomes managing that help rather than producing the movement yourself. This is a
+  mouse drill. It will not tell a controller player anything useful about their aim, and
+  a poor score on it does not mean what it would mean for a mouse player.</p>
+
+%(faq)s
+
+%(keep)s"""
 
 
 PAGES = [
     {
         "slug": "gridshot",
+        "faq": GRIDSHOT_FAQ,
         "engine": "gridshot", "preset": None,
         "title": "Gridshot Aim Trainer - Free 3x3 Grid Drill, No Download",
         "description": (
@@ -486,6 +797,7 @@ PAGES = [
     },
     {
         "slug": "tracking-trainer",
+        "faq": TRACKING_FAQ,
         "engine": "tracking", "preset": None,
         "title": "Tracking Aim Trainer - Free Smooth-Target Tracking Drill",
         "description": (
@@ -525,6 +837,7 @@ PAGES = [
     },
     {
         "slug": "precision-trainer",
+        "faq": PRECISION_FAQ,
         "engine": "precision", "preset": None,
         "title": "Precision Aim Trainer - Small Static Targets, Accuracy First",
         "description": (
@@ -572,11 +885,12 @@ PRESET_PAGES = [
     {
         "slug": "valorant-aim-trainer", "engine": None, "preset": "valorant",
         "game": "Valorant",
-        "title": "Valorant Aim Trainer - Free Browser Drill, Small Targets",
+        "body_tpl": VALORANT_BODY,
+        "title": "Valorant Aim Trainer - Free Browser Drill, Vandal One-Tap Tuning",
         "description": (
             "Free Valorant aim trainer in your browser. Small 44px targets on a short 1100ms "
-            "lifespan, tuned for tap-firing at head level. No download, no sign-up, nothing "
-            "uploaded."
+            "lifespan, tuned for the Vandal one-tap at head level. Real eDPI guidance. No "
+            "download, nothing uploaded."
         ),
         "jsonld_name": "Valorant Aim Trainer",
         "jsonld_desc": (
@@ -587,50 +901,34 @@ PRESET_PAGES = [
         "marquee_sub": "One Tap &middot; Head Level &middot; flicktrainer.com",
         "attract_1": "Head", "attract_2": "Level",
         "attract_blink": "Insert Coin &mdash; One Tap",
-        "size_note": (
-            "The smallest targets and the second-shortest window on this site, because that is "
-            "the shape of the aiming problem this game sets."
-        ),
-        "why": (
-            "  <p>Valorant is a tap-firing game played at head level. Most engagements are "
-            "decided by a single accurate shot rather than a burst, movement accuracy is "
-            "heavily penalised so you are usually stopped when you fire, and the thing you are "
-            "aiming at is a head-sized target you are trying to be pre-aimed at rather than "
-            "swing onto.</p>\n"
-            "  <p>So the tuning is small targets and a short window: 44px, shrinking to 30px, "
-            "held for 1100ms. Small, because the accuracy demand is the defining feature. "
-            "Short, because the moment when a peek is winnable does not last, and a drill that "
-            "lets you take two seconds over every shot trains the wrong tempo for it. The "
-            "combination is deliberately unforgiving &mdash; expect your accuracy here to sit "
-            "below what you get on the default drill.</p>"
-        ),
         "faq": [
-            ("Will this actually improve my Valorant aim?",
-             "It will warm your hand up and it will train the motor habit of settling before "
-             "you fire, which does transfer. It will not train crosshair placement, peeker's "
-             "advantage, movement accuracy or recoil control, which are where most of the "
-             "actual aiming skill in that game lives. Use it as a ninety-second warm-up, not "
-             "as a substitute for playing."),
+            ("How do I convert my Counter-Strike sensitivity to Valorant?",
+             "Keep the same DPI and divide the Counter-Strike figure by 3.18. A Counter-Strike "
+             "sensitivity of 1.1 becomes a Valorant sensitivity of about 0.35. Never copy the "
+             "raw number across, because the two games scale it differently."),
+            ("Will this improve my rank?",
+             "It warms your hand up. Rank in Valorant turns far more on utility, positioning "
+             "and communication than on raw aim, and no browser page touches any of those. "
+             "Use it as a ninety-second warm-up before you queue."),
             ("Are these the real hitbox sizes?",
-             "No, and they could not be &mdash; a hitbox is a 3D volume on an animating model "
-             "at a variable distance, and this is a flat circle on a web page. The 44px/30px/"
-             "1100ms tuning is chosen to make the aiming problem <em>feel</em> like the game's, "
-             "which is the most a browser drill can honestly claim."),
-            ("Should I match my in-game sensitivity?",
-             "Yes, and it matters more than anything else on this page. Warming up at a "
-             "different sensitivity from the one you are about to play at is worse than not "
-             "warming up, because you spend the first rounds recalibrating away from what you "
-             "just practised."),
+             "No. A hitbox is a three-dimensional volume on an animating model at a variable "
+             "distance. This is a flat circle on a web page. The tuning copies how the aiming "
+             "problem <em>feels</em>, which is the most a browser drill can honestly claim."),
+            ("Why is my accuracy worse here than on the other two game pages?",
+             "Because the targets are smaller and the window is shorter, which is deliberate. "
+             "Compare this page against your own earlier runs on this page, not against the "
+             "<a href=\"/fortnite-aim-trainer/\">Fortnite tuning</a>."),
         ],
     },
     {
         "slug": "csgo-aim-trainer", "engine": None, "preset": "csgo",
         "game": "CS:GO",
-        "title": "CS:GO Aim Trainer - Free Browser Drill, Counter-Strike Tuning",
+        "body_tpl": CSGO_BODY,
+        "title": "CS:GO Aim Trainer - Free Browser Drill for CS2 One-Taps",
         "description": (
-            "Free CS:GO aim trainer in your browser. Medium 52px targets on a longer 1500ms "
-            "lifespan, tuned for deliberate tap and burst discipline. No download, nothing "
-            "uploaded."
+            "Free CS:GO and CS2 aim trainer in your browser. Medium 52px targets on a patient "
+            "1500ms lifespan, tuned for the stopped first bullet. Real eDPI and cm/360 "
+            "guidance. Nothing uploaded."
         ),
         "jsonld_name": "CS:GO Aim Trainer",
         "jsonld_desc": (
@@ -641,47 +939,34 @@ PRESET_PAGES = [
         "marquee_sub": "Counter Strike Tuning &middot; flicktrainer.com",
         "attract_1": "Spray", "attract_2": "Control",
         "attract_blink": "Insert Coin &mdash; Hold The Angle",
-        "size_note": (
-            "The most forgiving window on this site, because Counter-Strike rewards the shot "
-            "you set up over the shot you rush."
-        ),
-        "why": (
-            "  <p>Counter-Strike is the most deliberate of the three games here. Engagements "
-            "are frequently decided by who was already holding the angle rather than who "
-            "reacted fastest, the economy makes a wasted round expensive enough that "
-            "discipline beats aggression, and the core mechanical skill is stopping, firing a "
-            "controlled tap or burst, and stopping again.</p>\n"
-            "  <p>So the tuning is medium targets and the longest window: 52px, shrinking to "
-            "38px, held for 1500ms. The extra time is the point &mdash; it makes rushing "
-            "strictly worse than settling, which is the habit the game rewards. If your "
-            "accuracy here is not noticeably better than on the "
-            "<a href=\"/valorant-aim-trainer/\">Valorant tuning</a>, you are firing on arrival "
-            "rather than on settling, and the extra 400ms is telling you so.</p>"
-        ),
         "faq": [
-            ("Why are the targets bigger than the Valorant page?",
-             "Because the aiming problem is differently shaped, not because the game is "
-             "easier. Counter-Strike engagements more often involve a body at a held angle "
-             "than a head-sized target you must be pre-aimed at, and the tuning reflects the "
-             "tempo rather than a claim about difficulty."),
-            ("Does this help with spray control?",
-             "No. Spray control is recoil-pattern memorisation combined with counter-movement, "
-             "and neither exists in a browser page with no weapon and no recoil model. This "
-             "drill trains the first shot, which is the part of the fight that recoil has not "
-             "affected yet."),
-            ("Is this good for CS2 as well?",
-             "Yes &mdash; nothing here is version-specific. The tuning targets the tempo of "
-             "Counter-Strike aiming generally, which the sequel did not change."),
+            ("What eDPI should I use for Counter-Strike?",
+             "Most professionals sit between 700 and 1000, which is 400 or 800 DPI with a low "
+             "in-game figure. Pick one value inside that band, then leave it alone for a "
+             "month. Changing it weekly is what actually holds people back."),
+            ("Does this drill teach the AK-47 spray pattern?",
+             "No. The pattern is a fixed shape you pull from memory while counter-strafing to "
+             "keep your feet still, and this page has no weapon, no recoil model and no "
+             "movement keys. Learn it in game, on a practice map, against a wall."),
+            ("Is this tuning right for CS2 as well as CS:GO?",
+             "Yes. CS2 changed the tick model and rewrote the smokes. It did not change the "
+             "fact that a stopped bullet to the head ends the duel, and that is the whole "
+             "subject of this page."),
+            ("Why is the window longer here than on the other two game pages?",
+             "Because Counter-Strike pays for patience. Firing on arrival rather than on "
+             "settling is the most expensive habit in the game, and a drill that rewarded a "
+             "rushed click would train exactly that."),
         ],
     },
     {
         "slug": "fortnite-aim-trainer", "engine": None, "preset": "fortnite",
         "game": "Fortnite",
-        "title": "Fortnite Aim Trainer - Free Browser Drill, Fast Target Swaps",
+        "body_tpl": FORTNITE_BODY,
+        "title": "Fortnite Aim Trainer - Free Browser Drill for Box Fight Snaps",
         "description": (
-            "Free Fortnite aim trainer in your browser. Larger 68px targets on the shortest "
-            "900ms lifespan, tuned for fast target acquisition between builds. No download, "
-            "nothing uploaded."
+            "Free Fortnite aim trainer in your browser. Large 68px targets on a 900ms "
+            "lifespan, tuned for the box-fight shotgun snap. Real sensitivity guidance for "
+            "all four sliders. Nothing uploaded."
         ),
         "jsonld_name": "Fortnite Aim Trainer",
         "jsonld_desc": (
@@ -692,36 +977,23 @@ PRESET_PAGES = [
         "marquee_sub": "Fast Swaps &middot; flicktrainer.com",
         "attract_1": "Quick", "attract_2": "Swap",
         "attract_blink": "Insert Coin &mdash; Fast Hands",
-        "size_note": (
-            "The largest targets and the shortest window on this site &mdash; the opposite "
-            "trade from the Valorant tuning, and deliberately so."
-        ),
-        "why": (
-            "  <p>Fortnite asks a different question from the other two. The opponent is "
-            "rarely still and rarely exposed for long: they are building, edit-peeking, "
-            "falling, or crossing a gap between structures, and the window in which they are "
-            "shootable at all is often shorter than the window in which they are hard to "
-            "hit precisely. Acquisition speed dominates fine precision.</p>\n"
-            "  <p>So the tuning inverts the Valorant page: larger targets, 68px shrinking to "
-            "44px, on the shortest lifespan here at 900ms. It is a drill about getting there "
-            "in time rather than getting there exactly, and your average time-to-click is the "
-            "number to watch on it &mdash; accuracy should be comfortable, and if it is not, "
-            "the targets are outrunning you rather than outsizing you.</p>"
-        ),
         "faq": [
-            ("Why are the targets larger but the time shorter?",
-             "Because that is the trade the game makes. Opponents are exposed briefly and "
-             "often at close range, so the difficulty is arriving inside the window rather "
-             "than landing inside a small area. The Valorant tuning makes the opposite trade, "
-             "and running both is a quick way to see which half of your aim is weaker."),
-            ("Does this help with building or editing?",
-             "Not at all &mdash; those are keybind and muscle-memory skills with no aiming "
-             "component, and no browser drill touches them. This trains the shooting half of "
-             "a fight only."),
-            ("Should I use timed or count mode here?",
-             "Timed, and preferably 30 or 60 seconds. This tuning is about sustaining fast "
-             "acquisition, and a fixed target count lets you pause between targets in a way "
-             "the game never will."),
+            ("What sensitivity do Fortnite professionals use?",
+             "Commonly 800 DPI with X and Y between 6 and 9 per cent, Targeting and Scope near "
+             "50 per cent, and a much higher Build and Edit sensitivity. There is no single "
+             "correct pair, because the four sliders trade against each other."),
+            ("Does this train building or editing?",
+             "No. Building and editing are keybind reflexes with no aiming component at all. "
+             "Practise those in Creative, where you can reset a box in a second and repeat it "
+             "a thousand times."),
+            ("I play on a controller. Is this useful?",
+             "Not very. Aim assist changes the task from producing the movement yourself to "
+             "managing the help the game gives you, and a mouse drill measures only the first "
+             "of those. A poor score here does not mean much for a controller player."),
+            ("Should I use timed or count mode?",
+             "Timed, at 30 or 60 seconds. This tuning is about sustaining fast reacquisition, "
+             "and a fixed target count lets you rest between targets in a way that a box fight "
+             "never will."),
         ],
     },
 ]
@@ -738,7 +1010,22 @@ for p in PRESET_PAGES:
         "1300ms. You are rated on average time-to-click, with accuracy and throughput "
         "alongside it." % cfg
     )
-    p["body"] = preset_body(p["game"], p["size_note"], cfg, p["why"], p["faq"])
+    p["body"] = p["body_tpl"] % {
+        "start": cfg["start"],
+        "end": cfg["end"],
+        "life": cfg["life"],
+        "faq": faq(p["faq"]),
+        "keep": keep_reading([
+            ("/gridshot/", "Gridshot",
+             "Nine fixed positions, three targets live at once, scored in targets per second."),
+            ("/tracking-trainer/", "Tracking Trainer",
+             "One target on a smooth path, scored on the share of the session your crosshair "
+             "was inside it."),
+            ("/precision-trainer/", "Precision Trainer",
+             "Small static targets, accuracy first &mdash; the drill where taking your time "
+             "is correct."),
+        ]),
+    }
 
 ALL_PAGES = PAGES + PRESET_PAGES
 
@@ -877,6 +1164,10 @@ def render(p):
         "howto": p["howto"],
         "switch": switch,
         "body": p["body"],
+        "h1": esc(p["title"]),
+        "faq_ld": faq_jsonld(p["faq"]),
+        "crumb_ld": breadcrumb_jsonld(p["jsonld_name"], url),
+        "related": related_block(),
         "ad": AD_TAG,
         "erabbit": ERABBIT,
         "v": V,
@@ -919,6 +1210,8 @@ TEMPLATE = """<!doctype html>
   "description": "%(jsonld_desc)s"
 }
 </script>
+%(faq_ld)s
+%(crumb_ld)s
 
 %(ad)s
 </head>
@@ -948,7 +1241,7 @@ TEMPLATE = """<!doctype html>
 <main id="main">
   <div class="cabinet">
     <div class="marquee">
-      <div class="marquee-logo"><span class="mq-1">Flick</span><span class="mq-2">%(mq2)s</span></div>
+      <h1 class="marquee-logo"><span class="visually-hidden">%(h1)s</span><span class="mq-1" aria-hidden="true">Flick</span><span class="mq-2" aria-hidden="true">%(mq2)s</span></h1>
       <div class="marquee-sub">%(marquee_sub)s</div>
     </div>
 
@@ -1067,6 +1360,7 @@ TEMPLATE = """<!doctype html>
 <div class="unlock-stack" id="unlock-stack" aria-live="polite"></div>
 
 <footer class="site-footer">
+%(related)s
   <div class="footer-inner">
     <div>&copy; <span id="year"></span> flicktrainer.com</div>
     <div class="footer-links">

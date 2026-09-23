@@ -20,7 +20,7 @@
 <meta name="twitter:description" content="Free gridshot trainer in your browser. Nine fixed positions, three targets live at once, scored in targets per second over 15, 30 or 60 seconds. No download, no sign-up, nothing uploaded.">
 
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/css/styles.css?v=6">
+<link rel="stylesheet" href="/assets/css/styles.css?v=7">
 
 <script type="application/ld+json">
 {
@@ -32,6 +32,28 @@
   "operatingSystem": "Any",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "description": "Free browser-based gridshot aim training drill: a fixed 3x3 grid with three targets live simultaneously, scored in targets cleared per second."
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "What is a good gridshot score?", "acceptedAnswer": {"@type": "Answer", "text": "On this drill's configuration, around 1.2–1.5 targets per second is steady, and past 1.8 is quick. Treat those as this page's own difficulty bands rather than a population statistic — target size, spacing, screen size and mouse polling rate all move the number, so the only comparison that means anything is against your own previous runs on the same setup."}},
+    {"@type": "Question", "name": "Why do targets not disappear on their own?", "acceptedAnswer": {"@type": "Answer", "text": "Because gridshot measures how fast you can clear targets, not whether you can keep up with a spawn timer. With no expiry, a miss is only ever a shot that landed on empty space, which makes the accuracy figure a clean measure of shot discipline instead of a mix of two things."}},
+    {"@type": "Question", "name": "Is gridshot better than random-spawn flicking?", "acceptedAnswer": {"@type": "Answer", "text": "It is not better, it is narrower. Fixed positions remove visual search and isolate the movement, which is what makes it a good warm-up and a good progress metric. Random spawns are closer to a real game, where you do have to find things. Running both and comparing them tells you which half is holding you back."}},
+    {"@type": "Question", "name": "Does it work on a trackpad or a phone?", "acceptedAnswer": {"@type": "Answer", "text": "It runs, and the drill is the same, but the numbers are not comparable to a mouse. A trackpad cannot flick, and a touchscreen removes the movement entirely — you are tapping locations, not aiming at them. Compare like with like."}}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Flick Trainer", "item": "https://flicktrainer.com/"},
+    {"@type": "ListItem", "position": 2, "name": "Gridshot Aim Trainer", "item": "https://flicktrainer.com/gridshot/"}
+  ]
 }
 </script>
 
@@ -72,7 +94,7 @@
         <li><a href="/gridshot/" aria-current="page">Gridshot</a></li>
         <li><a href="/tracking-trainer/">Tracking Trainer</a></li>
         <li><a href="/precision-trainer/">Precision Trainer</a></li>
-        <li><a href="/articles/what-is-a-good-reaction-time.html">What's a Good Reaction Time?</a></li>
+        <li><a href="/articles/what-is-a-good-reaction-time.html">What Is a Good Time-to-Click?</a></li>
         <li><a href="/articles/flick-vs-tracking-aim.html">Flicking vs. Tracking</a></li>
         <li><a href="/articles/history-of-aim-trainers.html">History of Aim Trainers</a></li>
         <li><a href="/articles/how-this-test-works.html">How This Test Works</a></li>
@@ -85,7 +107,7 @@
     <li><a href="/gridshot/" aria-current="page">Gridshot</a></li>
     <li><a href="/tracking-trainer/">Tracking</a></li>
     <li><a href="/precision-trainer/">Precision</a></li>
-    <li><a href="/articles/what-is-a-good-reaction-time.html">Reaction Time</a></li>
+    <li><a href="/articles/what-is-a-good-reaction-time.html">Time-to-Click</a></li>
     <li><a href="/articles/flick-vs-tracking-aim.html">Flick vs Track</a></li>
     <li><a href="/articles/history-of-aim-trainers.html">History</a></li>
     <li><a href="/articles/how-this-test-works.html">How It Works</a></li>
@@ -96,7 +118,7 @@
 <main id="main">
   <div class="cabinet">
     <div class="marquee">
-      <div class="marquee-logo"><span class="mq-1">Flick</span><span class="mq-2">Grid</span></div>
+      <h1 class="marquee-logo"><span class="visually-hidden">Gridshot Aim Trainer - Free 3x3 Grid Drill, No Download</span><span class="mq-1" aria-hidden="true">Flick</span><span class="mq-2" aria-hidden="true">Grid</span></h1>
       <div class="marquee-sub">Nine Cells &middot; Three Live &middot; flicktrainer.com</div>
     </div>
 
@@ -244,7 +266,7 @@
   </section>
 
   <section class="container-narrow" style="padding-top:0;">
-  <h1>Gridshot</h1>
+  <h2>Gridshot</h2>
 
   <p>Nine fixed positions in a three-by-three grid. Three targets are alive at any
   moment; clear one and another appears in a cell that is currently empty. Your score
@@ -355,6 +377,15 @@
 <div class="unlock-stack" id="unlock-stack" aria-live="polite"></div>
 
 <footer class="site-footer">
+  <nav class="footer-related" aria-label="Related tools">
+    <h2>Related tools</h2>
+    <ul>
+      <li><a href="https://reflexzap.com" rel="noopener">Reaction Time Test</a> <span>How fast you react to a signal</span></li>
+      <li><a href="https://cpsboost.com" rel="noopener">Click Speed Test</a> <span>Clicks per second, several formats</span></li>
+      <li><a href="https://stickdriftcheck.com" rel="noopener">Stick Drift Check</a> <span>Test a controller for drift</span></li>
+      <li><a href="https://hardwarecheckup.com" rel="noopener">Hardware Checkup</a> <span>Mouse, keyboard and display tests</span></li>
+    </ul>
+  </nav>
   <div class="footer-inner">
     <div>&copy; <span id="year"></span> flicktrainer.com</div>
     <div class="footer-links">
@@ -364,8 +395,8 @@
   </div>
 </footer>
 
-<script src="/assets/js/app.js?v=6"></script>
-<script src="/assets/js/nav.js?v=6"></script>
+<script src="/assets/js/app.js?v=7"></script>
+<script src="/assets/js/nav.js?v=7"></script>
 <a href="https://erabb.it" class="erabbit-mark" aria-label="erabb.it"><img src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128007;</text></svg>" width="10" height="10" alt=""></a>
 </body>
 </html>

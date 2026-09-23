@@ -20,6 +20,20 @@ const path = require("node:path");
 const A = require("../assets/js/app.js");
 const REPO = path.join(__dirname, "..");
 
+/* Every .html the site ships, discovered rather than listed: a new page must
+   not be able to skip the checks below by not being added to an array. */
+const ALL_HTML = (function walk(dir, base) {
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.name.startsWith(".") || e.name === "node_modules") continue;
+    const abs = path.join(dir, e.name);
+    const rel = base ? `${base}/${e.name}` : e.name;
+    if (e.isDirectory()) out.push(...walk(abs, rel));
+    else if (e.name.endsWith(".html")) out.push(rel);
+  }
+  return out;
+})(REPO, "").sort();
+
 /* ======================== the original helpers ======================== */
 
 test("accuracy is a bounded percentage, and 0/0 is 0 rather than NaN", () => {
@@ -299,18 +313,32 @@ for (const page of DRILL_PAGES) {
     assert.match(html, /erabbit-mark[\s\S]*?<\/a>\s*<\/body>/, "the mark must be last in body");
     assert.ok(html.includes("<!-- nav:start -->"), "the toolbar region must be present");
     assert.ok(html.includes('aria-current="page"'), "the active nav link must be marked");
-    assert.ok(/<h1>[^<]+<\/h1>/.test(html), "every page needs its own h1");
+    const h1s = html.match(/<h1[\s>]/g) || [];
+    assert.strictEqual(h1s.length, 1, "every page needs exactly one h1");
+    // The h1 has to come before the first h2, or a crawler reads the page as
+    // starting halfway down. The marquee is the h1, and the marquee is the
+    // first thing inside <main>.
+    const h1At = html.indexOf("<h1");
+    const h2At = html.indexOf("<h2");
+    assert.ok(h1At > -1 && (h2At === -1 || h1At < h2At), "the h1 must precede every h2");
     assert.ok(!/\?v=5\b/.test(html), "stale cache-bust");
   });
 
   test(`/${page.slug}/ makes no external requests`, () => {
     const html = fs.readFileSync(clean, "utf8");
-    const external = [...html.matchAll(/(?:src|href)="(https?:\/\/[^"]+)"/g)]
+    // A hyperlink is not a request. What this rule exists to ban is a
+    // SUBRESOURCE the browser fetches without being asked: a script, a
+    // stylesheet, a font, an image, a frame, a beacon. Footer links to sibling
+    // sites cost the visitor nothing until they click one, so they are matched
+    // separately from src= and <link href=>.
+    const subresources = [
+      ...html.matchAll(/<(?:script|img|iframe|source|video|audio)[^>]+src="(https?:\/\/[^"]+)"/g),
+      ...html.matchAll(/<link[^>]+href="(https?:\/\/[^"]+)"/g),
+    ]
       .map((m) => m[1])
       .filter((u) => !u.startsWith("https://flicktrainer.com/"))
-      .filter((u) => !u.startsWith("https://pagead2.googlesyndication.com/"))
-      .filter((u) => !/^https?:\/\/(erabb\.it|schema\.org)/.test(u));
-    assert.deepStrictEqual(external, [], "unexpected external resource");
+      .filter((u) => !u.startsWith("https://pagead2.googlesyndication.com/"));
+    assert.deepStrictEqual(subresources, [], "unexpected external subresource");
     assert.ok(!/<link[^>]+fonts\./.test(html), "no web fonts");
   });
 
@@ -374,4 +402,177 @@ test("no page promises a drill it does not have", () => {
     const sitemap = fs.readFileSync(path.join(REPO, "sitemap.xml"), "utf8");
     assert.ok(!sitemap.includes(banned), `${banned} must not be in the sitemap`);
   }
+});
+
+/* ================= a backgrounded tab must not score a run =================
+
+   tick() is the only path to endSession(), and it re-arms itself with
+   requestAnimationFrame, which a hidden tab stops delivering. The target
+   expiry is a setTimeout, which a hidden tab keeps firing. The two together
+   produced a run that counted misses forever and never ended: measured in
+   headless Chrome, a 15s run hidden at t=1s read 0.0s on the clock at t=16s
+   and was still on the game screen at t=31s with 23 misses.
+
+   The rule that stops it is DOM-free, so it is asserted here. The wiring in
+   app.js routes document.visibilitychange through this one predicate. */
+
+test("a run is abandoned when, and only when, the tab goes hidden", () => {
+  assert.strictEqual(A.shouldAbandonRun("hidden", true), true);
+  assert.strictEqual(A.shouldAbandonRun("visible", true), false);
+  // No live run: switching tabs on the setup or results screen changes nothing.
+  assert.strictEqual(A.shouldAbandonRun("hidden", false), false);
+  assert.strictEqual(A.shouldAbandonRun("visible", false), false);
+  // Safari reports "prerender" while a page is warming up in the background.
+  // That is not hidden and it is not a live run either.
+  assert.strictEqual(A.shouldAbandonRun("prerender", true), false);
+});
+
+test("app.js actually listens for the tab being hidden", () => {
+  // The predicate above is worthless if nothing calls it. This is the cheap
+  // check that the wiring did not get dropped in a later refactor.
+  const js = fs.readFileSync(path.join(REPO, "assets/js/app.js"), "utf8");
+  assert.match(js, /addEventListener\("visibilitychange"/, "no visibilitychange handler");
+  assert.match(js, /addEventListener\("pagehide"/, "no pagehide handler");
+  // endSession(true) is the quit path: it writes no best, no history entry and
+  // no XP. An abandoned run must go through it and not through endSession().
+  const handler = js.slice(js.indexOf("function abandonRun"), js.indexOf("function abandonRun") + 400);
+  assert.match(handler, /endSession\(true\)/, "an abandoned run must not be scored");
+});
+
+/* ===================== the game pages are different pages =====================
+
+   Issue #17: the three game-branded pages were one template with the game's
+   name substituted in, which measured at 61% shared five-word sequences. Three
+   pages that say the same thing compete with each other and Google keeps one.
+   This is the guard that stops the template creeping back. */
+
+function bodyWords(rel) {
+  const html = fs.readFileSync(path.join(REPO, rel), "utf8");
+  const main = html.slice(html.indexOf("<main"), html.indexOf("</main>"));
+  return main
+    .replace(/<script[\s\S]*?<\/script>/g, " ")
+    .replace(/<style[\s\S]*?<\/style>/g, " ")
+    .replace(/<nav[\s\S]*?<\/nav>/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z]+;|&#\d+;/g, " ")
+    .toLowerCase()
+    .match(/[a-z0-9']+/g) || [];
+}
+
+function fiveGrams(words) {
+  const out = new Set();
+  for (let i = 0; i + 5 <= words.length; i++) out.add(words.slice(i, i + 5).join(" "));
+  return out;
+}
+
+test("no two game pages share more than a quarter of their prose", () => {
+  const slugs = ["csgo-aim-trainer", "valorant-aim-trainer", "fortnite-aim-trainer"];
+  const grams = new Map(slugs.map((s) => [s, fiveGrams(bodyWords(`${s}/index.html`))]));
+  for (let i = 0; i < slugs.length; i++) {
+    for (let j = i + 1; j < slugs.length; j++) {
+      const a = grams.get(slugs[i]);
+      const b = grams.get(slugs[j]);
+      let shared = 0;
+      for (const g of a) if (b.has(g)) shared++;
+      const pct = (100 * shared) / Math.min(a.size, b.size);
+      assert.ok(
+        pct < 25,
+        `${slugs[i]} and ${slugs[j]} share ${pct.toFixed(1)}% of their five-grams`
+      );
+    }
+  }
+});
+
+test("each game page names things that only apply to that game", () => {
+  // A cheap proxy for "is this really about the game". Generic tuning prose
+  // could pass the overlap test by being differently generic.
+  const required = {
+    "csgo-aim-trainer": ["AK-47", "cm/360", "eDPI", "counter-strafing"],
+    "valorant-aim-trainer": ["Vandal", "Phantom", "eDPI", "160 damage"],
+    "fortnite-aim-trainer": ["shield", "Build and Edit", "box", "aim assist"],
+  };
+  for (const [slug, terms] of Object.entries(required)) {
+    const html = fs.readFileSync(path.join(REPO, slug, "index.html"), "utf8");
+    for (const term of terms) {
+      assert.ok(html.includes(term), `${slug} never mentions "${term}"`);
+    }
+  }
+});
+
+/* ============================ structured data ============================ */
+
+test("every JSON-LD block on every page parses", () => {
+  let blocks = 0;
+  for (const rel of ALL_HTML) {
+    const html = fs.readFileSync(path.join(REPO, rel), "utf8");
+    for (const m of html.matchAll(
+      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g
+    )) {
+      blocks++;
+      try {
+        JSON.parse(m[1]);
+      } catch (e) {
+        assert.fail(`${rel}: ${e.message}`);
+      }
+    }
+  }
+  assert.ok(blocks >= 30, `only ${blocks} JSON-LD blocks found`);
+});
+
+test("FAQPage schema quotes the questions the page actually shows", () => {
+  // Schema that does not match the visible copy is a manual action waiting to
+  // happen. Both come from one list in build_drills.py; this proves it.
+  for (const rel of ALL_HTML) {
+    const html = fs.readFileSync(path.join(REPO, rel), "utf8");
+    const ld = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+      .map((m) => JSON.parse(m[1]))
+      .find((d) => d["@type"] === "FAQPage");
+    if (!ld) continue;
+    for (const q of ld.mainEntity) {
+      const visible = html.includes(`<h3>${q.name}</h3>`) ||
+        html.includes(q.name.replace(/'/g, "&#x27;")) ||
+        html.includes(q.name.replace(/'/g, "'"));
+      assert.ok(visible, `${rel}: schema asks "${q.name}" but the page does not`);
+    }
+  }
+});
+
+test("every page below the root carries a BreadcrumbList", () => {
+  for (const rel of ALL_HTML) {
+    if (rel === "index.html" || rel === "404.html") continue;
+    const html = fs.readFileSync(path.join(REPO, rel), "utf8");
+    assert.ok(html.includes('"BreadcrumbList"'), `${rel} has no BreadcrumbList`);
+  }
+});
+
+test("the sitemap carries a lastmod for every url", () => {
+  const sitemap = fs.readFileSync(path.join(REPO, "sitemap.xml"), "utf8");
+  const urls = sitemap.match(/<url>/g) || [];
+  const mods = sitemap.match(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g) || [];
+  assert.strictEqual(mods.length, urls.length, "a url is missing its lastmod");
+});
+
+test("every page links its sibling sites, and keeps the erabbit mark", () => {
+  for (const rel of ALL_HTML) {
+    if (rel === "404.html") continue;
+    const html = fs.readFileSync(path.join(REPO, rel), "utf8");
+    assert.ok(html.includes("footer-related"), `${rel} has no related-tools block`);
+    assert.match(html, /erabbit-mark[\s\S]*?<\/a>\s*<\/body>/, `${rel}: the mark must be last`);
+    // Not a link farm. Four peers, chosen, not enumerated.
+    const peers = (html.match(/class="footer-related"[\s\S]*?<\/nav>/) || [""])[0];
+    const links = peers.match(/<a /g) || [];
+    assert.ok(links.length >= 3 && links.length <= 5, `${rel}: ${links.length} peers is not 3-5`);
+  }
+});
+
+test("the tracking drill states its touch limitation, and the homepage does not overclaim", () => {
+  // The tracking drill samples the cursor from pointermove only, which on a
+  // touchscreen fires only while a finger is down — and the finger then covers
+  // the target. The page says so rather than quietly scoring 5%.
+  const tracking = fs.readFileSync(path.join(REPO, "tracking-trainer/index.html"), "utf8");
+  assert.ok(tracking.includes("callout--coarse"), "no touch-device callout");
+  assert.match(tracking, /needs a mouse or a trackpad/i, "the limitation is not stated");
+  const home = fs.readFileSync(path.join(REPO, "index.html"), "utf8");
+  const faq = home.slice(home.indexOf("<h3>Does this work on mobile?</h3>"));
+  assert.match(faq.slice(0, 900), /tracking-trainer/, "the blanket yes has no exception");
 });
