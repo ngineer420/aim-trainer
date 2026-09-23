@@ -576,3 +576,67 @@ test("the tracking drill states its touch limitation, and the homepage does not 
   const faq = home.slice(home.indexOf("<h3>Does this work on mobile?</h3>"));
   assert.match(faq.slice(0, 900), /tracking-trainer/, "the blanket yes has no exception");
 });
+
+/* ================ the privacy policy points at something real ================
+
+   The policy used to end with "Questions about this policy can be sent to the
+   site owner via the contact link in the footer." There was no contact link in
+   any footer, so the sentence was false from the day it was written.
+
+   The address is written with HTML numeric character references, so the source
+   bytes carry no plain address for a crawler to grep. A browser decodes them
+   while parsing, which is why these assertions decode them too. Verified in
+   headless Chrome: the anchor's protocol is "mailto:", it takes keyboard
+   focus, and the accessibility tree names it with the real address. */
+
+const CONTACT = "hello@goodbotbad.bot";
+
+function decodeEntities(text) {
+  return text.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+}
+
+test("every footer carries a working contact link", () => {
+  for (const rel of ALL_HTML) {
+    const html = fs.readFileSync(path.join(REPO, rel), "utf8");
+    const footer = (html.match(/<div class="footer-links">[\s\S]*?<\/div>/) || [])[0];
+    assert.ok(footer, `${rel} has no footer-links block`);
+    const decoded = decodeEntities(footer);
+    assert.ok(decoded.includes(`mailto:${CONTACT}`), `${rel}: no contact link in the footer`);
+    assert.ok(/>Contact</.test(decoded), `${rel}: the contact link is not labelled`);
+  }
+});
+
+test("the address is not sitting in the source as plain text", () => {
+  // Light obfuscation only. It stops a crawler that greps the HTML. It does not
+  // pretend to stop one that runs a browser, and it must never cost a real
+  // visitor the link.
+  for (const rel of ALL_HTML) {
+    const html = fs.readFileSync(path.join(REPO, rel), "utf8");
+    assert.ok(!html.includes(CONTACT), `${rel}: plain address in the source`);
+  }
+});
+
+test("the privacy policy's contact claim is accurate", () => {
+  const html = fs.readFileSync(path.join(REPO, "privacy.html"), "utf8");
+  const section = (html.match(/<h2>Contact<\/h2>[\s\S]*?<\/p>/) || [""])[0];
+  const plain = decodeEntities(section.replace(/<[^>]+>/g, " "));
+  assert.ok(plain.includes(CONTACT), "the policy does not name the address");
+  assert.ok(/footer/i.test(plain), "the policy does not mention the footer");
+  assert.ok(!/contact link in the footer\.\s*<\/p>/.test(html),
+    "the old sentence, which pointed at a link that did not exist, is back");
+});
+
+test("the footer link set is the same on every page", () => {
+  // The legal pages used to swap their own link for a Home link, so "the
+  // footer" meant two different things depending on where you were standing.
+  let shape = null;
+  for (const rel of ALL_HTML) {
+    const html = fs.readFileSync(path.join(REPO, rel), "utf8");
+    const footer = (html.match(/<div class="footer-links">[\s\S]*?<\/div>/) || [""])[0];
+    const labels = [...footer.matchAll(/<a\b[^>]*>(.*?)<\/a>/g)]
+      .map((m) => decodeEntities(m[1]).trim()).join(" | ");
+    if (shape === null) shape = labels;
+    assert.strictEqual(labels, shape, `${rel} has a different footer from the rest`);
+  }
+  assert.strictEqual(shape, "Privacy | Terms | Contact");
+});
