@@ -147,12 +147,11 @@ def breadcrumb_jsonld(name, url):
     )
 
 
-# Four peers, not nineteen. Each one answers a question somebody who just
+# Three peers, not nineteen. Each one answers a question somebody who just
 # measured their aim plausibly has next, which is the only reason to link out.
 RELATED = [
     ("https://reflexzap.com", "Reaction Time Test", "How fast you react to a signal"),
     ("https://cpsboost.com", "Click Speed Test", "Clicks per second, several formats"),
-    ("https://stickdriftcheck.com", "Stick Drift Check", "Test a controller for drift"),
     ("https://hardwarecheckup.com", "Hardware Checkup", "Mouse, keyboard and display tests"),
 ]
 
